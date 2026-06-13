@@ -19,6 +19,7 @@ export function serializeState(state) {
     solved: state.solved,
   };
   if (Number.isFinite(state.seed)) serialized.seed = state.seed;
+  if (typeof state.unique === 'boolean') serialized.unique = state.unique;
   return JSON.stringify(serialized);
 }
 
@@ -38,11 +39,11 @@ export function deserializeState(str) {
   }
 
   if (!isValidState(state)) return null;
-  if (!('seed' in state) || Number.isFinite(state.seed)) return state;
 
-  const withoutSeed = { ...state };
-  delete withoutSeed.seed;
-  return withoutSeed;
+  const clean = { ...state };
+  if ('seed' in clean && !Number.isFinite(clean.seed)) delete clean.seed;
+  if ('unique' in clean && typeof clean.unique !== 'boolean') delete clean.unique;
+  return clean;
 }
 
 function isValidState(state) {

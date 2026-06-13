@@ -78,6 +78,27 @@ test('state without seed round-trips without adding seed key', () => {
   assert.equal(Object.hasOwn(copy, 'seed'), false);
 });
 
+test('unique flag round-trips and a non-boolean unique is dropped', () => {
+  for (const unique of [true, false]) {
+    const state = { ...makeState('easy', 7), unique };
+    assert.deepEqual(deserializeState(serializeState(state)), state);
+  }
+
+  // A corrupt/non-boolean unique value is stripped rather than retained.
+  const bad = JSON.stringify({ ...makeState('easy', 7), unique: 'yes' });
+  const copy = deserializeState(bad);
+  assert.equal(Object.hasOwn(copy, 'unique'), false);
+  assert.deepEqual(copy, makeState('easy', 7));
+});
+
+test('state without unique round-trips without adding unique key', () => {
+  const state = makeState('hard', 9);
+  const copy = deserializeState(serializeState(state));
+
+  assert.deepEqual(copy, state);
+  assert.equal(Object.hasOwn(copy, 'unique'), false);
+});
+
 test('non-numeric seed is omitted during deserialize', () => {
   const state = { ...makeState('easy', 7), seed: 'not-a-number' };
   const copy = deserializeState(JSON.stringify(state));

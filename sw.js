@@ -1,6 +1,6 @@
 // Service worker: precache the full app shell so the game works fully offline
 // after the first load. Bump CACHE_VERSION whenever any shipped asset changes.
-const CACHE_VERSION = 'queens-v7';
+const CACHE_VERSION = 'queens-v8';
 
 const ASSETS = [
   './',
@@ -20,6 +20,7 @@ const ASSETS = [
   './js/serialize.js',
   './js/stats.js',
   './js/storage.js',
+  './js/history.js',
   './js/settings.js',
   './js/modes.js',
   './js/pwa.js',

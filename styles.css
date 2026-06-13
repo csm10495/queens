@@ -161,6 +161,27 @@ input[type='number'] {
 .btn-block {
   width: 100%;
 }
+.btn:disabled {
+  cursor: default;
+  opacity: 0.4;
+}
+@media (hover: hover) {
+  .btn:disabled:hover {
+    background: transparent;
+  }
+}
+
+/* ---- Action bar (undo / redo / hint / clear) ---- */
+.actionbar {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+  align-items: center;
+}
+.actionbar .btn {
+  flex: 1 1 0;
+  min-width: 0;
+}
 
 /* ---- Status bar ---- */
 .statusbar {
@@ -485,6 +506,47 @@ input[type='number'] {
 }
 .settings-actions p {
   margin: 0;
+}
+
+/* ---- History list ---- */
+.history-list {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  max-height: 56vh;
+  overflow-y: auto;
+}
+.history-item {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  padding: 10px 2px;
+  border-bottom: 1px solid var(--grid-line);
+}
+.history-main {
+  display: flex;
+  align-items: baseline;
+  justify-content: space-between;
+  gap: 12px;
+}
+.history-mode {
+  font-weight: 700;
+}
+.history-time {
+  font-variant-numeric: tabular-nums;
+  font-weight: 700;
+  white-space: nowrap;
+}
+.history-meta {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 10px;
+  color: var(--muted);
+  font-size: 0.78rem;
+}
+.history-code {
+  font-family: ui-monospace, SFMono-Regular, Menlo, monospace;
 }
 
 /* ---- Share bar ---- */

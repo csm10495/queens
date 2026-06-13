@@ -43,6 +43,20 @@ export function sanitizeQueenIcon(value) {
 }
 
 /**
+ * Decide what to commit from a *live* queen-icon field while the user is typing.
+ * Returns the sanitized icon, or null when the field is empty/whitespace so the
+ * caller leaves it untouched. This lets the user backspace the field clear (and
+ * keep an in-progress IME/emoji composition on Android) without it instantly
+ * snapping back to the default crown.
+ * @param {unknown} value
+ * @returns {string|null}
+ */
+export function liveQueenIcon(value) {
+  if (typeof value !== 'string' || value.trim() === '') return null;
+  return sanitizeQueenIcon(value);
+}
+
+/**
  * Validate/merge an arbitrary (possibly corrupt) object into a complete,
  * safe settings object. Unknown or invalid fields fall back to defaults.
  * @param {any} obj

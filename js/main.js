@@ -13,7 +13,8 @@ import {
 } from './modes.js';
 import * as store from './storage.js';
 import { recordWin, getBucket, emptyStats } from './stats.js';
-import { normalizeSettings, applyTheme, QUEEN_PRESETS } from './settings.js';
+import { recordSolve } from './history.js';
+import { normalizeSettings, applyTheme, liveQueenIcon, QUEEN_PRESETS } from './settings.js';
 import { generatePuzzleForMode, UNIQUE_MAX_N } from './puzzle.js';
 import { encodePuzzleCode, parsePuzzleCode } from './code.js';
 import { EMPTY, MARK } from './rules.js';
@@ -27,6 +28,11 @@ const el = {
   customSize: $('custom-size'),
   newBtn: $('new-btn'),
   giveupBtn: $('giveup-btn'),
+  historyBtn: $('history-btn'),
+  undoBtn: $('undo-btn'),
+  redoBtn: $('redo-btn'),
+  hintBtn: $('hint-btn'),
+  clearBtn: $('clear-btn'),
   settingsBtn: $('settings-btn'),
   statusbar: $('statusbar'),
   timer: $('timer'),
@@ -43,6 +49,11 @@ const el = {
   solNext: $('sol-next'),
   settingsModal: $('settings-modal'),
   settingsClose: $('settings-close'),
+  historyModal: $('history-modal'),
+  historyClose: $('history-close'),
+  historyList: $('history-list'),
+  historyEmpty: $('history-empty'),
+  historyClear: $('history-clear'),
   setTheme: $('set-theme'),
   setPalette: $('set-palette'),
   setDefaultMode: $('set-default-mode'),
@@ -65,6 +76,7 @@ const el = {
 
 let settings = normalizeSettings(store.loadSettings());
 let stats = store.loadStats();
+let solveHistory = store.loadHistory();
 let mode = settings.defaultMode;
 let customN = settings.customN;
 let game = null;
@@ -93,14 +105,21 @@ function boardRenderOpts() {
 // Board interaction handlers shared by every createBoard call.
 const boardHandlers = {
   onTap: onCellActivate,
-  isDragEnabled: () => settings.dragMark,
-  onDragStart: (r, c) => game.dragPaintValue(r, c),
+  isDragEnabled: () => settings.dragMark && !!game && !locked && !game.isSolved(),
+  onDragStart: (r, c) => {
+    game.beginDrag();
+    return game.dragPaintValue(r, c);
+  },
   onDragPaint: (r, c, value) => {
     if (game.paintCell(r, c, value)) {
       ui.updateBoard(el.board, game, boardRenderOpts());
     }
   },
-  onDragEnd: () => persist(),
+  onDragEnd: () => {
+    game.endDrag();
+    updateActionButtons();
+    persist();
+  },
 };
 
 function renderBoard() {
@@ -172,6 +191,7 @@ function startGame(puzzle, seed, restore) {
   el.hint.textContent = puzzle.n > UNIQUE_MAX_N ? 'Large board — may allow more than one solution.' : '';
   updateCodeDisplay();
   updateStats();
+  updateActionButtons();
   if (!game.isSolved()) {
     game.start();
     startTimer();
@@ -187,6 +207,49 @@ function onCellActivate(r, c) {
   if (!game || game.isSolved() || locked) return;
   game.cycle(r, c, { autoX: settings.autoX });
   ui.updateBoard(el.board, game, boardRenderOpts());
+  updateActionButtons();
+  if (game.isSolved()) handleWin();
+  else persist();
+}
+
+// Enable/disable the undo, redo, hint and clear buttons for the current state.
+function updateActionButtons() {
+  const active = !!game && !locked && !game.isSolved();
+  el.undoBtn.disabled = !(active && game.canUndo());
+  el.redoBtn.disabled = !(active && game.canRedo());
+  el.clearBtn.disabled = !(active && !game.isEmpty());
+  el.hintBtn.disabled = !active;
+}
+
+function doUndo() {
+  if (!game || locked || !game.undo()) return;
+  ui.updateBoard(el.board, game, boardRenderOpts());
+  updateActionButtons();
+  persist();
+}
+
+function doRedo() {
+  if (!game || locked || !game.redo()) return;
+  ui.updateBoard(el.board, game, boardRenderOpts());
+  updateActionButtons();
+  if (game.isSolved()) handleWin();
+  else persist();
+}
+
+function clearBoard() {
+  if (!game || locked || game.isSolved() || game.isEmpty()) return;
+  if (!window.confirm('Clear the board? You can undo this.')) return;
+  game.clear();
+  ui.updateBoard(el.board, game, boardRenderOpts());
+  updateActionButtons();
+  persist();
+}
+
+function giveHint() {
+  if (!game || locked || game.isSolved()) return;
+  if (!game.hint()) return;
+  ui.updateBoard(el.board, game, boardRenderOpts());
+  updateActionButtons();
   if (game.isSolved()) handleWin();
   else persist();
 }
@@ -195,11 +258,20 @@ function handleWin() {
   stopTimer();
   updateTimer();
   locked = true;
+  updateActionButtons();
   const ms = game.elapsedMs();
   const before = getBucket(stats, mode, currentN());
   const isBest = before.bestMs == null || ms < before.bestMs;
   stats = recordWin(stats, mode, currentN(), ms);
   store.saveStats(stats);
+  solveHistory = recordSolve(solveHistory, {
+    mode,
+    n: currentN(),
+    timeMs: ms,
+    solvedAt: Date.now(),
+    ...(puzzleCodeStr() ? { code: puzzleCodeStr() } : {}),
+  });
+  store.saveHistory(solveHistory);
   store.clearResume();
   updateStats();
   el.winTime.textContent = ui.formatTime(ms);
@@ -212,6 +284,7 @@ function giveUp() {
   stopTimer();
   locked = true;
   revealed = true;
+  updateActionButtons();
   ui.revealSolution(el.board, game, colors, settings.queenIcon);
   store.clearResume();
   ui.show(el.solutionModal);
@@ -343,7 +416,9 @@ function onSettingsChange() {
     showTimer: el.setTimer.checked,
     dragMark: el.setDrag.checked,
     continuousHints: el.setHints.checked,
-    queenIcon: el.setQueen.value,
+    // Keep the committed queen icon; the queen field has its own live handler so
+    // toggling another setting never disturbs an in-progress emoji edit.
+    queenIcon: settings.queenIcon,
     customN,
   });
   applyTheme(settings.theme);
@@ -352,15 +427,36 @@ function onSettingsChange() {
   if (game) {
     colors = regionColors(game.n, settings.palette);
     renderBoard();
-    if (revealed) {
-      ui.revealSolution(el.board, game, colors, settings.queenIcon);
-    } else {
-      ui.updateBoard(el.board, game, boardRenderOpts());
-    }
+    repaintBoard();
   }
   applyDragMark();
-  el.setQueen.value = settings.queenIcon;
   saveSettings();
+}
+
+function repaintBoard() {
+  if (!game) return;
+  if (revealed) ui.revealSolution(el.board, game, colors, settings.queenIcon);
+  else ui.updateBoard(el.board, game, boardRenderOpts());
+}
+
+// Queen-icon field: commit live as the user types, but never rewrite the field
+// mid-edit (so Android IME composition and backspace-to-clear keep working). The
+// field is normalized to the single committed glyph only when editing finishes.
+let composingQueen = false;
+
+function applyQueenInput() {
+  if (composingQueen) return;
+  const icon = liveQueenIcon(el.setQueen.value);
+  if (icon === null || icon === settings.queenIcon) return; // empty field → leave as-is
+  settings = normalizeSettings({ ...settings, queenIcon: icon });
+  repaintBoard();
+  saveSettings();
+}
+
+function finalizeQueenInput() {
+  // On blur/change, snap the display to the committed glyph (an empty field
+  // reverts to the last good icon rather than vanishing).
+  el.setQueen.value = settings.queenIcon;
 }
 
 function applyShowTimer() {
@@ -372,6 +468,74 @@ function resetScores() {
   stats = emptyStats();
   store.saveStats(stats);
   updateStats();
+}
+
+// ---- history ------------------------------------------------------------
+const MODE_NAME = (m) => MODE_LABELS[m] ?? m;
+
+function formatSolvedAt(ts) {
+  try {
+    return new Date(ts).toLocaleString(undefined, {
+      month: 'short',
+      day: 'numeric',
+      hour: 'numeric',
+      minute: '2-digit',
+    });
+  } catch {
+    return '';
+  }
+}
+
+function renderHistory() {
+  el.historyList.innerHTML = '';
+  el.historyList.classList.toggle('hidden', solveHistory.length === 0);
+  el.historyEmpty.classList.toggle('hidden', solveHistory.length !== 0);
+
+  const frag = document.createDocumentFragment();
+  for (const entry of solveHistory) {
+    const li = document.createElement('li');
+    li.className = 'history-item';
+
+    const main = document.createElement('div');
+    main.className = 'history-main';
+    const label = document.createElement('span');
+    label.className = 'history-mode';
+    label.textContent = `${MODE_NAME(entry.mode)} (${entry.n}×${entry.n})`;
+    const time = document.createElement('span');
+    time.className = 'history-time';
+    time.textContent = `⏱ ${ui.formatTime(entry.timeMs)}`;
+    main.append(label, time);
+
+    const meta = document.createElement('div');
+    meta.className = 'history-meta';
+    const date = document.createElement('span');
+    date.className = 'history-date';
+    date.textContent = formatSolvedAt(entry.solvedAt);
+    meta.appendChild(date);
+    if (entry.code) {
+      const code = document.createElement('code');
+      code.className = 'history-code';
+      code.textContent = entry.code;
+      meta.appendChild(code);
+    }
+
+    li.append(main, meta);
+    frag.appendChild(li);
+  }
+  el.historyList.appendChild(frag);
+}
+
+function openHistory() {
+  renderHistory();
+  ui.show(el.historyModal);
+}
+
+function clearHistoryList() {
+  if (solveHistory.length === 0) return;
+  if (!window.confirm('Clear your solved-puzzle history?')) return;
+  solveHistory = [];
+  store.clearHistory();
+  renderHistory();
 }
 
 // ---- install (PWA) ------------------------------------------------------
@@ -423,7 +587,8 @@ function populateQueenPresets() {
     b.title = `Use ${emoji}`;
     b.addEventListener('click', () => {
       el.setQueen.value = emoji;
-      onSettingsChange();
+      applyQueenInput();
+      finalizeQueenInput();
     });
     el.queenPresets.appendChild(b);
   }
@@ -432,8 +597,18 @@ function populateQueenPresets() {
 function wireEvents() {
   el.newBtn.addEventListener('click', newPuzzle);
   el.giveupBtn.addEventListener('click', giveUp);
+  el.undoBtn.addEventListener('click', doUndo);
+  el.redoBtn.addEventListener('click', doRedo);
+  el.hintBtn.addEventListener('click', giveHint);
+  el.clearBtn.addEventListener('click', clearBoard);
   el.settingsBtn.addEventListener('click', openSettings);
   el.settingsClose.addEventListener('click', () => ui.hide(el.settingsModal));
+  el.historyBtn.addEventListener('click', openHistory);
+  el.historyClose.addEventListener('click', () => ui.hide(el.historyModal));
+  el.historyClear.addEventListener('click', clearHistoryList);
+  el.historyModal.addEventListener('click', (e) => {
+    if (e.target === el.historyModal) ui.hide(el.historyModal);
+  });
   el.difficulty.addEventListener('change', onDifficultyChange);
   el.customSize.addEventListener('change', onCustomChange);
   el.winNext.addEventListener('click', newPuzzle);
@@ -444,7 +619,16 @@ function wireEvents() {
   el.setReset.addEventListener('click', resetScores);
   el.shareBtn.addEventListener('click', sharePuzzle);
   el.puzzleCode.addEventListener('click', sharePuzzle);
-  el.setQueen.addEventListener('input', onSettingsChange);
+  el.setQueen.addEventListener('input', applyQueenInput);
+  el.setQueen.addEventListener('compositionstart', () => {
+    composingQueen = true;
+  });
+  el.setQueen.addEventListener('compositionend', () => {
+    composingQueen = false;
+    applyQueenInput();
+  });
+  el.setQueen.addEventListener('change', finalizeQueenInput);
+  el.setQueen.addEventListener('blur', finalizeQueenInput);
   el.loadCodeBtn.addEventListener('click', loadCodeFromInput);
   el.loadCode.addEventListener('keydown', (e) => {
     if (e.key === 'Enter') loadCodeFromInput();
@@ -482,7 +666,7 @@ function boot() {
     mode = modeForSize(parsed.n);
     customN = parsed.n;
     syncDifficultyUI();
-    history.replaceState(null, '', location.pathname);
+    window.history.replaceState(null, '', location.pathname);
     newPuzzle({ seed: parsed.seed });
     return;
   }
@@ -493,7 +677,7 @@ function boot() {
     if (resume.mode === 'custom') customN = resume.n;
     syncDifficultyUI();
     startGame(
-      { n: resume.n, regions: resume.regions, solution: resume.solution, mode: resume.mode },
+      { n: resume.n, regions: resume.regions, solution: resume.solution, mode: resume.mode, unique: resume.unique },
       resume.seed,
       resume
     );

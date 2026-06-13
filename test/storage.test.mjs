@@ -4,10 +4,13 @@ import {
   KEYS,
   clearAll,
   clearResume,
+  clearHistory,
   loadResume,
+  loadHistory,
   loadSettings,
   loadStats,
   saveResume,
+  saveHistory,
   saveSettings,
   saveStats,
 } from '../js/storage.js';
@@ -129,12 +132,39 @@ test('clearAll removes stats, settings, and resume keys', () => {
   saveStats(recordWin(emptyStats(), 'hard', 9, 9000), storage);
   saveSettings({ theme: 'dark' }, storage);
   saveResume(sampleState(), storage);
+  saveHistory([{ mode: 'easy', n: 7, timeMs: 1000, solvedAt: 1 }], storage);
 
   clearAll(storage);
 
   assert.equal(storage.getItem(KEYS.stats), null);
   assert.equal(storage.getItem(KEYS.settings), null);
   assert.equal(storage.getItem(KEYS.resume), null);
+  assert.equal(storage.getItem(KEYS.history), null);
+});
+
+test('history storage returns empty list for empty storage', () => {
+  assert.deepEqual(loadHistory(fakeStorage()), []);
+});
+
+test('saveHistory and loadHistory round-trip and normalize entries', () => {
+  const storage = fakeStorage();
+  const valid = { mode: 'easy', n: 7, timeMs: 1000, solvedAt: 5, code: '7-1abc' };
+  // saveHistory normalizes away junk entries before persisting
+  saveHistory([valid, { mode: 'bogus' }], storage);
+  assert.deepEqual(loadHistory(storage), [valid]);
+});
+
+test('loadHistory returns empty list for corrupt data', () => {
+  assert.deepEqual(loadHistory(fakeStorage([[KEYS.history, '{bad json']])), []);
+  assert.deepEqual(loadHistory(fakeStorage([[KEYS.history, JSON.stringify({})]])), []);
+});
+
+test('clearHistory removes the history key', () => {
+  const storage = fakeStorage();
+  saveHistory([{ mode: 'easy', n: 7, timeMs: 1000, solvedAt: 1 }], storage);
+  clearHistory(storage);
+  assert.equal(storage.getItem(KEYS.history), null);
+  assert.deepEqual(loadHistory(storage), []);
 });
 
 test('load functions never throw when getItem returns garbage', () => {
@@ -149,9 +179,11 @@ test('load functions never throw when getItem returns garbage', () => {
   assert.doesNotThrow(() => loadStats(garbageStorage));
   assert.doesNotThrow(() => loadResume(garbageStorage));
   assert.doesNotThrow(() => loadSettings(garbageStorage));
+  assert.doesNotThrow(() => loadHistory(garbageStorage));
   assert.deepEqual(loadStats(garbageStorage), emptyStats());
   assert.equal(loadResume(garbageStorage), null);
   assert.equal(loadSettings(garbageStorage), null);
+  assert.deepEqual(loadHistory(garbageStorage), []);
 });
 
 test('save functions swallow setItem errors', () => {

@@ -69,6 +69,12 @@
         </div>
       </main>
 
+      <div class="sharebar">
+        <button id="share-btn" class="btn btn-ghost btn-sm">🔗 Share</button>
+        <code id="puzzle-code" class="puzzle-code" title="Tap to copy a shareable link">—</code>
+        <span id="share-status" class="share-status" aria-live="polite"></span>
+      </div>
+
       <p class="rule-hint">
         One 👑 per row, column &amp; color. Queens can’t touch — not even diagonally. Tap a cell: ▢ → ✗ → 👑.
       </p>
@@ -117,6 +123,21 @@
           <select id="set-palette"></select>
         </div>
         <div class="setting">
+          <label for="set-queen">Queen icon</label>
+          <div class="queen-pick">
+            <input
+              id="set-queen"
+              class="queen-input"
+              type="text"
+              maxlength="8"
+              inputmode="text"
+              autocomplete="off"
+              aria-label="Queen icon — type or paste any emoji"
+            />
+            <div id="queen-presets" class="queen-presets"></div>
+          </div>
+        </div>
+        <div class="setting">
           <label for="set-default-mode">Default difficulty</label>
           <select id="set-default-mode"></select>
         </div>
@@ -132,13 +153,29 @@
           <label for="set-timer">Show timer</label>
           <input type="checkbox" id="set-timer" />
         </div>
+        <div class="setting">
+          <label for="load-code">Play a puzzle code</label>
+          <div class="loadcode">
+            <input
+              id="load-code"
+              class="code-input"
+              type="text"
+              placeholder="e.g. 9-1z3x"
+              autocomplete="off"
+              aria-label="Enter a puzzle code"
+            />
+            <button id="load-code-btn" class="btn btn-sm">Load</button>
+          </div>
+        </div>
 
         <hr />
-        <button id="set-install" class="btn btn-primary btn-block hidden">Install app</button>
-        <p id="set-install-hint" class="muted small hidden">
-          On iPhone/iPad: tap the Share button, then “Add to Home Screen”.
-        </p>
-        <button id="set-reset" class="btn btn-danger btn-block">Reset scores</button>
+        <div class="settings-actions">
+          <button id="set-install" class="btn btn-primary btn-block hidden">Install app</button>
+          <p id="set-install-hint" class="muted small hidden">
+            On iPhone/iPad: tap the Share button, then “Add to Home Screen”.
+          </p>
+          <button id="set-reset" class="btn btn-danger btn-block">Reset scores</button>
+        </div>
       </div>
     </div>
 

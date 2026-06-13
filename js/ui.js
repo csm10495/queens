@@ -28,7 +28,7 @@ export function fillSelect(select, options, selected) {
   }
 }
 
-const GLYPH = { [QUEEN]: '👑', [MARK]: '✗' };
+const MARK_GLYPH = '✗';
 
 /**
  * Build the board grid for a game. Cells are coloured by region with thick
@@ -77,7 +77,7 @@ export function createBoard(boardEl, game, colors, onActivate) {
 }
 
 /** Repaint glyphs + conflict highlights from the current game state. */
-export function updateBoard(boardEl, game, { highlightConflicts }) {
+export function updateBoard(boardEl, game, { highlightConflicts, queenIcon = '👑' }) {
   const { n, cells } = game;
   const conflictSet = new Set();
   if (highlightConflicts) for (const { r, c } of game.conflicts()) conflictSet.add(r * n + c);
@@ -89,7 +89,7 @@ export function updateBoard(boardEl, game, { highlightConflicts }) {
     const c = Number(cell.dataset.c);
     const state = cells[r][c];
     const glyph = cell.firstChild;
-    glyph.textContent = GLYPH[state] || '';
+    glyph.textContent = state === QUEEN ? queenIcon : state === MARK ? MARK_GLYPH : '';
     glyph.classList.toggle('queen', state === QUEEN);
     glyph.classList.toggle('mark', state === MARK);
     cell.classList.toggle('conflict', conflictSet.has(r * n + c));
@@ -98,7 +98,7 @@ export function updateBoard(boardEl, game, { highlightConflicts }) {
 }
 
 /** Reveal the intended solution (used on "give up"). */
-export function revealSolution(boardEl, game, colors) {
+export function revealSolution(boardEl, game, colors, queenIcon = '👑') {
   const { n, solution } = game;
   const nodes = boardEl.children;
   for (let i = 0; i < nodes.length; i++) {
@@ -107,7 +107,7 @@ export function revealSolution(boardEl, game, colors) {
     const c = Number(cell.dataset.c);
     const glyph = cell.firstChild;
     const isQueen = solution[r] === c;
-    glyph.textContent = isQueen ? '👑' : '';
+    glyph.textContent = isQueen ? queenIcon : '';
     glyph.classList.toggle('queen', isQueen);
     glyph.classList.remove('mark');
     cell.classList.remove('conflict');

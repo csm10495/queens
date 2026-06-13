@@ -10,12 +10,34 @@ export const DEFAULT_SETTINGS = Object.freeze({
   showTimer: true, // show the live timer
   defaultMode: 'easy', // mode used on first load / new game
   customN: 10, // remembered custom board size
+  queenIcon: '👑', // glyph used for queens
 });
+
+export const QUEEN_PRESETS = Object.freeze(['👑', '♛', '⭐', '❤️', '🔥', '🌸', '🦄', '💎']);
 
 const THEMES = ['system', 'light', 'dark'];
 
 function bool(value, fallback) {
   return typeof value === 'boolean' ? value : fallback;
+}
+
+/**
+ * Reduce an arbitrary queen icon setting to a single display glyph.
+ * @param {unknown} value
+ * @returns {string}
+ */
+export function sanitizeQueenIcon(value) {
+  if (typeof value !== 'string') return DEFAULT_SETTINGS.queenIcon;
+
+  const trimmed = value.trim();
+  if (!trimmed) return DEFAULT_SETTINGS.queenIcon;
+
+  if (typeof Intl !== 'undefined' && typeof Intl.Segmenter === 'function') {
+    const segmenter = new Intl.Segmenter(undefined, { granularity: 'grapheme' });
+    return segmenter.segment(trimmed)[Symbol.iterator]().next().value.segment;
+  }
+
+  return Array.from(trimmed)[0] ?? DEFAULT_SETTINGS.queenIcon;
 }
 
 /**
@@ -34,6 +56,7 @@ export function normalizeSettings(obj) {
     showTimer: bool(s.showTimer, DEFAULT_SETTINGS.showTimer),
     defaultMode: MODES.includes(s.defaultMode) ? s.defaultMode : DEFAULT_SETTINGS.defaultMode,
     customN: clampCustom(s.customN ?? DEFAULT_SETTINGS.customN),
+    queenIcon: sanitizeQueenIcon(s.queenIcon ?? DEFAULT_SETTINGS.queenIcon),
   };
 }
 

@@ -9,6 +9,7 @@ import {
   isValidCustom,
   isMode,
   sizeForMode,
+  modeForSize,
 } from '../js/modes.js';
 
 test('MODES contains the five expected modes', () => {
@@ -51,4 +52,14 @@ test('isMode recognizes known modes only', () => {
   assert.equal(isMode('easy'), true);
   assert.equal(isMode('custom'), true);
   assert.equal(isMode('nope'), false);
+});
+
+test('modeForSize maps fixed sizes and falls back to custom', () => {
+  assert.equal(modeForSize(7), 'easy');
+  assert.equal(modeForSize(8), 'medium');
+  assert.equal(modeForSize(9), 'hard');
+  assert.equal(modeForSize(15), 'veryhard');
+  assert.equal(modeForSize(10), 'custom');
+  assert.equal(modeForSize(6), 'custom');
+  assert.equal(modeForSize(20), 'custom');
 });

@@ -7,13 +7,15 @@ import {
   FIXED_SIZES,
   sizeForMode,
   clampCustom,
+  modeForSize,
   CUSTOM_MIN,
   CUSTOM_MAX,
 } from './modes.js';
 import * as store from './storage.js';
 import { recordWin, getBucket, emptyStats } from './stats.js';
-import { normalizeSettings, applyTheme } from './settings.js';
+import { normalizeSettings, applyTheme, QUEEN_PRESETS } from './settings.js';
 import { generatePuzzleForMode, UNIQUE_MAX_N } from './puzzle.js';
+import { encodePuzzleCode, parsePuzzleCode } from './code.js';
 import { mulberry32, randomSeed } from './rng.js';
 import * as pwa from './pwa.js';
 
@@ -49,6 +51,13 @@ const el = {
   setInstall: $('set-install'),
   setInstallHint: $('set-install-hint'),
   setReset: $('set-reset'),
+  setQueen: $('set-queen'),
+  queenPresets: $('queen-presets'),
+  loadCode: $('load-code'),
+  loadCodeBtn: $('load-code-btn'),
+  shareBtn: $('share-btn'),
+  puzzleCode: $('puzzle-code'),
+  shareStatus: $('share-status'),
 };
 
 let settings = normalizeSettings(store.loadSettings());
@@ -62,6 +71,8 @@ let worker = null;
 let pendingReqId = 0;
 let reqCounter = 0;
 let locked = false; // true after win/give-up so the board can't be edited
+let revealed = false; // true after give-up (board shows the solution)
+let currentSeed = null; // seed of the current puzzle (for share codes)
 
 const modeLabel = (m) =>
   m === 'custom' ? MODE_LABELS[m] : `${MODE_LABELS[m]} (${FIXED_SIZES[m]}×${FIXED_SIZES[m]})`;
@@ -72,10 +83,14 @@ function initWorker() {
   try {
     worker = new Worker('./js/worker.js', { type: 'module' });
     worker.onmessage = (e) => {
-      const { reqId, ok, puzzle } = e.data || {};
+      const { reqId, ok, puzzle, seed } = e.data || {};
       if (reqId !== pendingReqId) return; // stale response
-      if (ok) onPuzzle(puzzle);
-      else onPuzzle(generatePuzzleForMode(mode, customN, mulberry32(randomSeed())));
+      if (ok) {
+        onPuzzle(puzzle, seed);
+      } else {
+        const s = randomSeed();
+        onPuzzle(generatePuzzleForMode(mode, customN, mulberry32(s)), s);
+      }
     };
     worker.onerror = () => {
       worker = null;
@@ -85,10 +100,10 @@ function initWorker() {
   }
 }
 
-function newPuzzle() {
+function newPuzzle(opts = {}) {
   hideModals();
   ui.show(el.loading);
-  const seed = randomSeed();
+  const seed = opts.seed != null ? opts.seed >>> 0 : randomSeed();
   const id = ++reqCounter;
   pendingReqId = id;
   if (worker) {
@@ -97,28 +112,34 @@ function newPuzzle() {
     // Defer so the spinner can paint before a (possibly heavy) synchronous gen.
     setTimeout(() => {
       if (id !== pendingReqId) return;
-      onPuzzle(generatePuzzleForMode(mode, customN, mulberry32(seed)));
+      onPuzzle(generatePuzzleForMode(mode, customN, mulberry32(seed)), seed);
     }, 16);
   }
 }
 
-function onPuzzle(puzzle) {
+function onPuzzle(puzzle, seed) {
   ui.hide(el.loading);
-  startGame(puzzle);
+  startGame(puzzle, seed);
 }
 
-function startGame(puzzle, restore) {
-  game = createGame(
-    puzzle,
-    restore
+function startGame(puzzle, seed, restore) {
+  game = createGame(puzzle, {
+    seed: seed ?? null,
+    ...(restore
       ? { initialCells: restore.cells, initialElapsedMs: restore.elapsedMs, solved: restore.solved }
-      : {}
-  );
+      : {}),
+  });
+  currentSeed = game.seed ?? null;
   colors = regionColors(puzzle.n, settings.palette);
   ui.createBoard(el.board, game, colors, onCellActivate);
-  ui.updateBoard(el.board, game, { highlightConflicts: settings.highlightConflicts });
+  ui.updateBoard(el.board, game, {
+    highlightConflicts: settings.highlightConflicts,
+    queenIcon: settings.queenIcon,
+  });
   locked = false;
+  revealed = false;
   el.hint.textContent = puzzle.n > UNIQUE_MAX_N ? 'Large board — may allow more than one solution.' : '';
+  updateCodeDisplay();
   updateStats();
   if (!game.isSolved()) {
     game.start();
@@ -134,7 +155,10 @@ function startGame(puzzle, restore) {
 function onCellActivate(r, c) {
   if (!game || game.isSolved() || locked) return;
   game.cycle(r, c, { autoX: settings.autoX });
-  ui.updateBoard(el.board, game, { highlightConflicts: settings.highlightConflicts });
+  ui.updateBoard(el.board, game, {
+    highlightConflicts: settings.highlightConflicts,
+    queenIcon: settings.queenIcon,
+  });
   if (game.isSolved()) handleWin();
   else persist();
 }
@@ -159,7 +183,8 @@ function giveUp() {
   if (!game || game.isSolved()) return;
   stopTimer();
   locked = true;
-  ui.revealSolution(el.board, game, colors);
+  revealed = true;
+  ui.revealSolution(el.board, game, colors, settings.queenIcon);
   store.clearResume();
   ui.show(el.solutionModal);
 }
@@ -186,6 +211,57 @@ function updateStats() {
 
 function persist() {
   if (game && !game.isSolved()) store.saveResume(game.toState());
+}
+
+// ---- share / puzzle codes ----------------------------------------------
+function puzzleCodeStr() {
+  return game && currentSeed != null ? encodePuzzleCode(game.n, currentSeed) : null;
+}
+
+function updateCodeDisplay() {
+  el.puzzleCode.textContent = puzzleCodeStr() || '—';
+  el.shareStatus.textContent = '';
+}
+
+function flashShare(msg) {
+  el.shareStatus.textContent = msg;
+  setTimeout(() => {
+    el.shareStatus.textContent = '';
+  }, 2000);
+}
+
+async function sharePuzzle() {
+  const code = puzzleCodeStr();
+  if (!code) return;
+  const url = `${location.origin}${location.pathname}?p=${code}`;
+  if (navigator.share) {
+    try {
+      await navigator.share({ title: 'Queens puzzle', text: `Queens puzzle ${code}`, url });
+      return;
+    } catch {
+      /* cancelled/unsupported — fall back to clipboard */
+    }
+  }
+  try {
+    await navigator.clipboard.writeText(url);
+    flashShare('Link copied!');
+  } catch {
+    flashShare(code);
+  }
+}
+
+function loadCodeFromInput() {
+  const parsed = parsePuzzleCode(el.loadCode.value);
+  if (!parsed) {
+    el.loadCode.classList.add('invalid');
+    return;
+  }
+  el.loadCode.classList.remove('invalid');
+  mode = modeForSize(parsed.n);
+  customN = parsed.n;
+  syncDifficultyUI();
+  ui.hide(el.settingsModal);
+  newPuzzle({ seed: parsed.seed });
 }
 
 // ---- difficulty controls ------------------------------------------------
@@ -216,6 +292,9 @@ function openSettings() {
   el.setAutoX.checked = settings.autoX;
   el.setHighlight.checked = settings.highlightConflicts;
   el.setTimer.checked = settings.showTimer;
+  el.setQueen.value = settings.queenIcon;
+  el.loadCode.value = '';
+  el.loadCode.classList.remove('invalid');
   refreshInstallButton();
   ui.show(el.settingsModal);
 }
@@ -232,16 +311,25 @@ function onSettingsChange() {
     autoX: el.setAutoX.checked,
     highlightConflicts: el.setHighlight.checked,
     showTimer: el.setTimer.checked,
+    queenIcon: el.setQueen.value,
     customN,
   });
   applyTheme(settings.theme);
   applyShowTimer();
-  // Re-colour the existing board for palette changes without disturbing play.
+  // Re-render the board for palette / queen-icon changes without disturbing play.
   if (game) {
     colors = regionColors(game.n, settings.palette);
     ui.createBoard(el.board, game, colors, onCellActivate);
-    ui.updateBoard(el.board, game, { highlightConflicts: settings.highlightConflicts });
+    if (revealed) {
+      ui.revealSolution(el.board, game, colors, settings.queenIcon);
+    } else {
+      ui.updateBoard(el.board, game, {
+        highlightConflicts: settings.highlightConflicts,
+        queenIcon: settings.queenIcon,
+      });
+    }
   }
+  el.setQueen.value = settings.queenIcon;
   saveSettings();
 }
 
@@ -292,6 +380,23 @@ function populateSelects() {
   );
   el.customSize.min = CUSTOM_MIN;
   el.customSize.max = CUSTOM_MAX;
+  populateQueenPresets();
+}
+
+function populateQueenPresets() {
+  el.queenPresets.innerHTML = '';
+  for (const emoji of QUEEN_PRESETS) {
+    const b = document.createElement('button');
+    b.type = 'button';
+    b.className = 'emoji-btn';
+    b.textContent = emoji;
+    b.title = `Use ${emoji}`;
+    b.addEventListener('click', () => {
+      el.setQueen.value = emoji;
+      onSettingsChange();
+    });
+    el.queenPresets.appendChild(b);
+  }
 }
 
 function wireEvents() {
@@ -307,6 +412,13 @@ function wireEvents() {
     c.addEventListener('change', onSettingsChange);
   }
   el.setReset.addEventListener('click', resetScores);
+  el.shareBtn.addEventListener('click', sharePuzzle);
+  el.puzzleCode.addEventListener('click', sharePuzzle);
+  el.setQueen.addEventListener('input', onSettingsChange);
+  el.loadCodeBtn.addEventListener('click', loadCodeFromInput);
+  el.loadCode.addEventListener('keydown', (e) => {
+    if (e.key === 'Enter') loadCodeFromInput();
+  });
   el.setInstall.addEventListener('click', async () => {
     await pwa.promptInstall();
     refreshInstallButton();
@@ -333,6 +445,18 @@ function boot() {
   pwa.initPwa();
   initWorker();
 
+  // A shared ?p=<code> link takes precedence and loads that exact puzzle.
+  const codeParam = new URLSearchParams(location.search).get('p');
+  const parsed = codeParam ? parsePuzzleCode(codeParam) : null;
+  if (parsed) {
+    mode = modeForSize(parsed.n);
+    customN = parsed.n;
+    syncDifficultyUI();
+    history.replaceState(null, '', location.pathname);
+    newPuzzle({ seed: parsed.seed });
+    return;
+  }
+
   const resume = store.loadResume();
   if (resume && !resume.solved) {
     mode = resume.mode;
@@ -340,6 +464,7 @@ function boot() {
     syncDifficultyUI();
     startGame(
       { n: resume.n, regions: resume.regions, solution: resume.solution, mode: resume.mode },
+      resume.seed,
       resume
     );
   } else {

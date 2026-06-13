@@ -2,8 +2,10 @@ import test from 'node:test';
 import assert from 'node:assert/strict';
 import {
   DEFAULT_SETTINGS,
+  QUEEN_PRESETS,
   normalizeSettings,
   resolveTheme,
+  sanitizeQueenIcon,
 } from '../js/settings.js';
 
 test('normalizeSettings returns defaults for empty/garbage input', () => {
@@ -29,6 +31,7 @@ test('normalizeSettings accepts valid values', () => {
     showTimer: false,
     defaultMode: 'veryhard',
     customN: 14,
+    queenIcon: '🍕',
   });
   assert.deepEqual(s, {
     theme: 'dark',
@@ -38,6 +41,7 @@ test('normalizeSettings accepts valid values', () => {
     showTimer: false,
     defaultMode: 'veryhard',
     customN: 14,
+    queenIcon: '🍕',
   });
 });
 
@@ -48,6 +52,31 @@ test('normalizeSettings clamps customN and coerces non-booleans', () => {
   // non-boolean assist values fall back to defaults
   assert.equal(normalizeSettings({ autoX: 'yes' }).autoX, DEFAULT_SETTINGS.autoX);
   assert.equal(normalizeSettings({ showTimer: 1 }).showTimer, DEFAULT_SETTINGS.showTimer);
+});
+
+test('queen icon defaults and presets are exposed', () => {
+  assert.equal(DEFAULT_SETTINGS.queenIcon, '👑');
+  assert.deepEqual([...QUEEN_PRESETS], ['👑', '♛', '⭐', '❤️', '🔥', '🌸', '🦄', '💎']);
+});
+
+test('sanitizeQueenIcon accepts arbitrary emoji and first grapheme only', () => {
+  assert.equal(sanitizeQueenIcon('🍕'), '🍕');
+  assert.equal(sanitizeQueenIcon('🍕abc'), '🍕');
+  assert.equal(normalizeSettings({ queenIcon: '🍕abc' }).queenIcon, '🍕');
+});
+
+test('sanitizeQueenIcon defaults empty whitespace and non-string values', () => {
+  assert.equal(sanitizeQueenIcon(''), '👑');
+  assert.equal(sanitizeQueenIcon('   '), '👑');
+  assert.equal(sanitizeQueenIcon(null), '👑');
+  assert.equal(sanitizeQueenIcon(123), '👑');
+});
+
+test('sanitizeQueenIcon preserves ZWJ emoji when grapheme segmenter is available', () => {
+  if (typeof Intl.Segmenter !== 'function') return;
+
+  assert.equal(sanitizeQueenIcon('👩‍🚀abc'), '👩‍🚀');
+  assert.equal(normalizeSettings({ queenIcon: '👩‍🚀abc' }).queenIcon, '👩‍🚀');
 });
 
 test('resolveTheme maps system to light/dark and passes explicit through', () => {

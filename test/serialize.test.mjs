@@ -64,6 +64,28 @@ test('deserialized copy is independent from later original mutation', () => {
   assert.deepEqual(copy, makeState('easy', 7, { queens: [[0, 0]], marks: [[1, 1]] }));
 });
 
+test('state with seed round-trips', () => {
+  const state = { ...makeState('hard', 9), seed: 0xffffffff };
+
+  assert.deepEqual(deserializeState(serializeState(state)), state);
+});
+
+test('state without seed round-trips without adding seed key', () => {
+  const state = makeState('medium', 8);
+  const copy = deserializeState(serializeState(state));
+
+  assert.deepEqual(copy, state);
+  assert.equal(Object.hasOwn(copy, 'seed'), false);
+});
+
+test('non-numeric seed is omitted during deserialize', () => {
+  const state = { ...makeState('easy', 7), seed: 'not-a-number' };
+  const copy = deserializeState(JSON.stringify(state));
+
+  assert.equal(Object.hasOwn(copy, 'seed'), false);
+  assert.deepEqual(copy, makeState('easy', 7));
+});
+
 function makeState(mode, n, options = {}) {
   const regions = Array.from({ length: n }, (_, row) => (
     Array.from({ length: n }, (_, column) => (row + column) % n)

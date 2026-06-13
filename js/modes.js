@@ -47,3 +47,9 @@ export function sizeForMode(mode, customN) {
   if (mode === 'custom') return clampCustom(customN);
   return FIXED_SIZES[mode];
 }
+
+/** Mode id for a grid size, or 'custom' when it is not a fixed mode size. */
+export function modeForSize(n) {
+  for (const m of ['easy', 'medium', 'hard', 'veryhard']) if (FIXED_SIZES[m] === n) return m;
+  return 'custom';
+}

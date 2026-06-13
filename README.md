@@ -10,6 +10,10 @@ including diagonally. Tap/click a cell to cycle empty → ✗ → 👑.
 
 Difficulties: Easy 7×7 · Medium 8×8 · Hard 9×9 · Very Hard 15×15 · Custom N (6–20).
 
+Every puzzle has a short **share code** (e.g. `9-1z3x`) shown under the board — tap **Share** to
+copy a link (`?p=<code>`) that reopens the exact puzzle. In **Settings** you can set the **queen
+icon to any emoji**, change theme/palette, toggle assists, and load a puzzle by code.
+
 ## Run locally
 
 ES modules, the Web Worker, and the service worker require serving over **http(s)** (not

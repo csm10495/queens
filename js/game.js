@@ -14,7 +14,7 @@ const ADJ = [
  * @param {{ now?: () => number, initialCells?: number[][], initialElapsedMs?: number, solved?: boolean }} [opts]
  */
 export function createGame(puzzle, opts = {}) {
-  const { n, regions, solution, mode = 'easy', unique = false } = puzzle;
+  const { n, regions, solution, mode = 'easy', unique = false, seed: puzzleSeed = null } = puzzle;
   const now = opts.now ?? (() => Date.now());
 
   const cells = opts.initialCells
@@ -25,6 +25,7 @@ export function createGame(puzzle, opts = {}) {
   let startedAt = null;
   let running = false;
   let solved = opts.solved ?? false;
+  const seed = opts.seed ?? puzzleSeed;
 
   function start() {
     if (!running && !solved) {
@@ -90,6 +91,7 @@ export function createGame(puzzle, opts = {}) {
       version: 1,
       mode,
       n,
+      ...(Number.isFinite(seed) ? { seed } : {}),
       regions: regions.map((row) => row.slice()),
       solution: solution.slice(),
       cells: cells.map((row) => row.slice()),
@@ -104,6 +106,7 @@ export function createGame(puzzle, opts = {}) {
     solution,
     mode,
     unique,
+    seed,
     cells,
     start,
     pause,

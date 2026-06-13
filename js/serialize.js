@@ -8,7 +8,7 @@ const CELL_VALUES = new Set([0, 1, 2]);
  * @returns {string} Stable JSON representation.
  */
 export function serializeState(state) {
-  return JSON.stringify({
+  const serialized = {
     version: state.version,
     mode: state.mode,
     n: state.n,
@@ -17,7 +17,9 @@ export function serializeState(state) {
     cells: state.cells,
     elapsedMs: state.elapsedMs,
     solved: state.solved,
-  });
+  };
+  if (Number.isFinite(state.seed)) serialized.seed = state.seed;
+  return JSON.stringify(serialized);
 }
 
 /**
@@ -35,7 +37,12 @@ export function deserializeState(str) {
     return null;
   }
 
-  return isValidState(state) ? state : null;
+  if (!isValidState(state)) return null;
+  if (!('seed' in state) || Number.isFinite(state.seed)) return state;
+
+  const withoutSeed = { ...state };
+  delete withoutSeed.seed;
+  return withoutSeed;
 }
 
 function isValidState(state) {

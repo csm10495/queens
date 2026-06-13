@@ -493,7 +493,7 @@ function boot() {
     if (resume.mode === 'custom') customN = resume.n;
     syncDifficultyUI();
     startGame(
-      { n: resume.n, regions: resume.regions, solution: resume.solution, mode: resume.mode },
+      { n: resume.n, regions: resume.regions, solution: resume.solution, mode: resume.mode, unique: resume.unique },
       resume.seed,
       resume
     );

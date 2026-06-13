@@ -126,3 +126,13 @@ test('toState snapshots and restores cells + elapsed time', () => {
   assert.equal(restored.cells[0][0], MARK);
   assert.equal(restored.elapsedMs(), 1234);
 });
+
+test('toState carries the puzzle unique flag (so continuous hints survive resume)', () => {
+  const uniquePuzzle = { ...makePuzzle(7, 21), unique: true };
+  const g = createGame(uniquePuzzle);
+  assert.equal(g.unique, true);
+  assert.equal(g.toState().unique, true);
+
+  const solvable = { ...makePuzzle(7, 21), unique: false };
+  assert.equal(createGame(solvable).toState().unique, false);
+});

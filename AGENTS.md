@@ -54,8 +54,9 @@ as an **offline PWA**. It runs on desktop and phone.
     `|solution[r] - solution[r-1]| >= 2` for consecutive rows.
   - `unique`: `true` if the board has a guaranteed-unique solution (see generation).
 - **cells** (player board): `number[][]`, `EMPTY=0 | MARK=1 | QUEEN=2` (from `rules.js`).
-- **state** (resume): `{ version:1, mode, n, seed?, regions, solution, cells, elapsedMs, solved }`
-  (`seed` is what powers shareable puzzle codes).
+- **state** (resume): `{ version:1, mode, n, seed?, unique?, regions, solution, cells, elapsedMs, solved }`
+  (`seed` is what powers shareable puzzle codes; `unique` is persisted so continuous hints keep
+  working after a reload/resume).
 - **stats**: `{ easy|medium|hard|veryhard: {bestMs, wins}, custom: { [nAsString]: {bestMs, wins} } }`.
 - **settings**: `{ theme, palette, queenIcon, autoX, highlightConflicts, showTimer, dragMark, continuousHints, defaultMode, customN }`
   (`queenIcon` is any emoji — sanitized to one grapheme; `dragMark` enables press-and-drag ✗

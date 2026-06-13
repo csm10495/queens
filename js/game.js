@@ -120,6 +120,7 @@ export function createGame(puzzle, opts = {}) {
       mode,
       n,
       ...(Number.isFinite(seed) ? { seed } : {}),
+      unique,
       regions: regions.map((row) => row.slice()),
       solution: solution.slice(),
       cells: cells.map((row) => row.slice()),

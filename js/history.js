@@ -30,7 +30,10 @@ export function normalizeEntry(entry) {
     timeMs: entry.timeMs,
     solvedAt: entry.solvedAt,
   };
-  if (typeof entry.code === 'string' && entry.code) clean.code = entry.code;
+  if (typeof entry.code === 'string') {
+    const code = entry.code.trim();
+    if (code) clean.code = code;
+  }
   return clean;
 }
 

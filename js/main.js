@@ -76,7 +76,7 @@ const el = {
 
 let settings = normalizeSettings(store.loadSettings());
 let stats = store.loadStats();
-let history = store.loadHistory();
+let solveHistory = store.loadHistory();
 let mode = settings.defaultMode;
 let customN = settings.customN;
 let game = null;
@@ -105,7 +105,7 @@ function boardRenderOpts() {
 // Board interaction handlers shared by every createBoard call.
 const boardHandlers = {
   onTap: onCellActivate,
-  isDragEnabled: () => settings.dragMark,
+  isDragEnabled: () => settings.dragMark && !!game && !locked && !game.isSolved(),
   onDragStart: (r, c) => {
     game.beginDrag();
     return game.dragPaintValue(r, c);
@@ -264,14 +264,14 @@ function handleWin() {
   const isBest = before.bestMs == null || ms < before.bestMs;
   stats = recordWin(stats, mode, currentN(), ms);
   store.saveStats(stats);
-  history = recordSolve(history, {
+  solveHistory = recordSolve(solveHistory, {
     mode,
     n: currentN(),
     timeMs: ms,
     solvedAt: Date.now(),
     ...(puzzleCodeStr() ? { code: puzzleCodeStr() } : {}),
   });
-  store.saveHistory(history);
+  store.saveHistory(solveHistory);
   store.clearResume();
   updateStats();
   el.winTime.textContent = ui.formatTime(ms);
@@ -488,11 +488,11 @@ function formatSolvedAt(ts) {
 
 function renderHistory() {
   el.historyList.innerHTML = '';
-  el.historyList.classList.toggle('hidden', history.length === 0);
-  el.historyEmpty.classList.toggle('hidden', history.length !== 0);
+  el.historyList.classList.toggle('hidden', solveHistory.length === 0);
+  el.historyEmpty.classList.toggle('hidden', solveHistory.length !== 0);
 
   const frag = document.createDocumentFragment();
-  for (const entry of history) {
+  for (const entry of solveHistory) {
     const li = document.createElement('li');
     li.className = 'history-item';
 
@@ -531,9 +531,9 @@ function openHistory() {
 }
 
 function clearHistoryList() {
-  if (history.length === 0) return;
+  if (solveHistory.length === 0) return;
   if (!window.confirm('Clear your solved-puzzle history?')) return;
-  history = [];
+  solveHistory = [];
   store.clearHistory();
   renderHistory();
 }
@@ -666,7 +666,7 @@ function boot() {
     mode = modeForSize(parsed.n);
     customN = parsed.n;
     syncDifficultyUI();
-    history.replaceState(null, '', location.pathname);
+    window.history.replaceState(null, '', location.pathname);
     newPuzzle({ seed: parsed.seed });
     return;
   }

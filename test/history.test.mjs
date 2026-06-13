@@ -29,8 +29,10 @@ test('recordSolve prepends newest-first and is immutable', () => {
 
 test('recordSolve keeps an optional puzzle code and drops missing/blank codes', () => {
   assert.equal(recordSolve([], entry({ code: '7-1abc' }))[0].code, '7-1abc');
+  assert.equal(recordSolve([], entry({ code: ' 7-1abc ' }))[0].code, '7-1abc');
   assert.equal('code' in recordSolve([], entry())[0], false);
   assert.equal('code' in recordSolve([], entry({ code: '' }))[0], false);
+  assert.equal('code' in recordSolve([], entry({ code: '   ' }))[0], false);
 });
 
 test('recordSolve ignores invalid entries but still normalizes the list', () => {

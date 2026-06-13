@@ -8,6 +8,29 @@ export function formatTime(ms) {
   return `${m}:${String(s).padStart(2, '0')}`;
 }
 
+/**
+ * Presentational details for the "solution mode" badge shown under the board.
+ * It surfaces the board's resolved `unique` flag — the exact value that gates
+ * continuous hints — so a player (or a bug report) can see at a glance whether
+ * hints are expected to work on this board.
+ *
+ * @param {boolean} unique - true when the board has a single guaranteed solution.
+ * @returns {{ text: string, title: string, className: string }}
+ */
+export function solutionModeBadge(unique) {
+  return unique
+    ? {
+        text: '🟢 Single solution',
+        title: 'This board has exactly one solution — continuous hints can flag a misplaced queen.',
+        className: 'sol-mode is-unique',
+      }
+    : {
+        text: '🟠 Multiple solutions',
+        title: 'This board may have several valid solutions — continuous hints are unavailable here.',
+        className: 'sol-mode is-multi',
+      };
+}
+
 export function show(el) {
   if (el) el.classList.remove('hidden');
 }

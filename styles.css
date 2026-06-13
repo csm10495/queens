@@ -12,6 +12,8 @@
   --primary-strong: #4f46e5;
   --primary-text: #ffffff;
   --danger: #ef4444;
+  --ok: #34d399;
+  --warn: #fbbf24;
   --grid-line: rgba(255, 255, 255, 0.16);
   --region-edge: rgba(8, 10, 25, 0.92);
   --cell-text: #10122b;
@@ -35,6 +37,8 @@
   --primary-strong: #4338ca;
   --primary-text: #ffffff;
   --danger: #dc2626;
+  --ok: #059669;
+  --warn: #b45309;
   --grid-line: rgba(20, 24, 60, 0.18);
   --region-edge: rgba(20, 24, 60, 0.88);
   --cell-text: #16182e;
@@ -208,12 +212,6 @@ input[type='number'] {
   font-size: 1.25rem;
   font-weight: 800;
   font-variant-numeric: tabular-nums;
-}
-.hint {
-  margin-left: auto;
-  color: var(--text-dim);
-  font-size: 0.85rem;
-  text-align: right;
 }
 .statusbar.timer-hidden .stat.time {
   display: none;
@@ -587,6 +585,27 @@ input[type='number'] {
   color: var(--primary);
   font-weight: 700;
 }
+.sol-mode {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  font-size: 0.8rem;
+  font-weight: 700;
+  padding: 4px 10px;
+  border-radius: 999px;
+  border: 1px solid var(--grid-line);
+  background: var(--surface);
+  white-space: nowrap;
+}
+.sol-mode:empty {
+  display: none;
+}
+.sol-mode.is-unique {
+  color: var(--ok);
+}
+.sol-mode.is-multi {
+  color: var(--warn);
+}
 
 /* ---- Queen-icon picker ---- */
 .queen-pick {
@@ -692,8 +711,5 @@ input[type='number'] {
   }
   .statusbar {
     gap: 12px;
-  }
-  .hint {
-    display: none;
   }
 }

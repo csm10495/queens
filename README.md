@@ -11,7 +11,9 @@ including diagonally. Tap/click a cell to cycle empty → ✗ → 👑.
 Difficulties: Easy 7×7 · Medium 8×8 · Hard 9×9 · Very Hard 15×15 · Custom N (6–20).
 
 Every puzzle has a short **share code** (e.g. `9-1z3x`) shown under the board — tap **Share** to
-copy a link (`?p=<code>`) that reopens the exact puzzle. In **Settings** you can set the **queen
+copy a link (`?p=<code>`) that reopens the exact puzzle. A badge under the board shows whether the
+current puzzle is a **🟢 single-solution** or **🟠 multiple-solution** board (continuous hints only
+apply to single-solution boards). In **Settings** you can set the **queen
 icon to any emoji**, change theme/palette, toggle assists, enable **continuous ✗ on hold**
 (press-and-drag to paint marks), enable **continuous hints** (flags a misplaced 👑 with a
 corner ✗ on single-solution boards), load a puzzle by code, and open your **Solved puzzles**

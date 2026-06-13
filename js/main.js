@@ -15,7 +15,7 @@ import * as store from './storage.js';
 import { recordWin, getBucket, emptyStats } from './stats.js';
 import { recordSolve } from './history.js';
 import { normalizeSettings, applyTheme, liveQueenIcon, QUEEN_PRESETS } from './settings.js';
-import { generatePuzzleForMode, UNIQUE_MAX_N } from './puzzle.js';
+import { generatePuzzleForMode } from './puzzle.js';
 import { encodePuzzleCode, parsePuzzleCode } from './code.js';
 import { EMPTY, MARK } from './rules.js';
 import { mulberry32, randomSeed } from './rng.js';
@@ -38,7 +38,6 @@ const el = {
   timer: $('timer'),
   best: $('best'),
   wins: $('wins'),
-  hint: $('hint'),
   board: $('board'),
   loading: $('loading'),
   winModal: $('win-modal'),
@@ -71,6 +70,7 @@ const el = {
   loadCodeBtn: $('load-code-btn'),
   shareBtn: $('share-btn'),
   puzzleCode: $('puzzle-code'),
+  solMode: $('sol-mode'),
   shareStatus: $('share-status'),
 };
 
@@ -188,7 +188,7 @@ function startGame(puzzle, seed, restore) {
   ui.updateBoard(el.board, game, boardRenderOpts());
   locked = false;
   revealed = false;
-  el.hint.textContent = puzzle.n > UNIQUE_MAX_N ? 'Large board — may allow more than one solution.' : '';
+  updateSolMode();
   updateCodeDisplay();
   updateStats();
   updateActionButtons();
@@ -322,6 +322,23 @@ function puzzleCodeStr() {
 function updateCodeDisplay() {
   el.puzzleCode.textContent = puzzleCodeStr() || '—';
   el.shareStatus.textContent = '';
+}
+
+// Show whether the current board is a guaranteed single-solution board. This
+// mirrors game.unique (the flag that gates continuous hints), so it doubles as a
+// quick diagnostic for whether hints are expected to work on this board.
+function updateSolMode() {
+  if (!el.solMode) return;
+  if (!game) {
+    el.solMode.textContent = '';
+    el.solMode.className = 'sol-mode';
+    el.solMode.removeAttribute('title');
+    return;
+  }
+  const badge = ui.solutionModeBadge(!!game.unique);
+  el.solMode.textContent = badge.text;
+  el.solMode.className = badge.className;
+  el.solMode.title = badge.title;
 }
 
 function flashShare(msg) {

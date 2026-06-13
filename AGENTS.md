@@ -65,7 +65,9 @@ as an **offline PWA**. It runs on desktop and phone.
   (`queenIcon` is any emoji — sanitized to one grapheme, committed live as you type without
   rewriting the field mid-edit so Android IME / backspace-to-clear keep working;
   `dragMark` enables press-and-drag ✗
-  painting; `continuousHints` flags a misplaced queen with a corner ✗, only on `unique` boards).
+  painting; `continuousHints` flags a misplaced queen with a corner ✗, only on `unique` boards.
+  A sharebar badge (`🟢 Single solution` / `🟠 Multiple solutions`, from `ui.solutionModeBadge`)
+  surfaces the board's `unique` flag, so it doubles as a quick check for whether hints apply).
 
 ### Pure, DOM-free modules (unit-tested directly)
 - `js/rng.js` — seedable PRNG (`mulberry32`, `randInt`, `shuffle`) for deterministic generation.
@@ -98,6 +100,8 @@ as an **offline PWA**. It runs on desktop and phone.
 - `js/ui.js` — board rendering, region borders, timer formatting, modal/banner helpers.
   `createBoard` takes a handlers object; interaction is pointer-based (tap cycles; when
   `dragMark` is on, press-and-drag paints/erases ✗ marks via `game.paintCell`).
+  `solutionModeBadge(unique)` is a pure helper returning the under-board single/multiple
+  solution badge text/title/class (it mirrors `game.unique`, the flag that gates hints).
 - `js/pwa.js` — service-worker registration + `beforeinstallprompt` handling.
 - `js/main.js` — bootstrap: wires worker, board, timer, persistence, settings, PWA.
 - `index.html`, `styles.css` — responsive app shell + CSS-variable theming (light/dark).

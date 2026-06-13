@@ -78,7 +78,11 @@ as an **offline PWA**. It runs on desktop and phone.
 - `js/serialize.js` — resume state (de)serialization (defensive).
 - `js/stats.js` — immutable best-time/win bookkeeping.
 - `js/settings.js` — settings normalization + theme resolution (`applyTheme` is DOM-guarded).
-- `js/game.js` — in-memory game state machine (cells, timer, cycle, conflicts, win, snapshot).
+- `js/game.js` — in-memory game state machine (cells, timer, cycle, conflicts, win, snapshot,
+  full undo/redo history, clear, and hint). `cycle`/`clear`/`hint` each record one undo step;
+  drag paints are grouped into one step via `beginDrag`/`endDrag`. `undo` walks back to the
+  starting board; any new action clears the redo stack. `hint` places one not-yet-found queen
+  from the intended solution.
 
 ### Side-effecting / glue
 - `js/storage.js` — defensive `localStorage` wrapper (stats, settings, resume). Accepts an

@@ -61,6 +61,13 @@
         <div id="hint" class="hint"></div>
       </section>
 
+      <section class="actionbar" aria-label="Board actions">
+        <button id="undo-btn" class="btn btn-ghost btn-sm" disabled aria-label="Undo" title="Undo">↶ Undo</button>
+        <button id="redo-btn" class="btn btn-ghost btn-sm" disabled aria-label="Redo" title="Redo">↷ Redo</button>
+        <button id="hint-btn" class="btn btn-ghost btn-sm" aria-label="Hint" title="Reveal one correct queen">💡 Hint</button>
+        <button id="clear-btn" class="btn btn-ghost btn-sm" disabled aria-label="Clear board" title="Clear the board">🧹 Clear</button>
+      </section>
+
       <main class="board-wrap">
         <div id="board" class="board" role="grid" aria-label="Queens board"></div>
         <div id="loading" class="overlay hidden">

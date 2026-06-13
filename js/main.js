@@ -27,6 +27,10 @@ const el = {
   customSize: $('custom-size'),
   newBtn: $('new-btn'),
   giveupBtn: $('giveup-btn'),
+  undoBtn: $('undo-btn'),
+  redoBtn: $('redo-btn'),
+  hintBtn: $('hint-btn'),
+  clearBtn: $('clear-btn'),
   settingsBtn: $('settings-btn'),
   statusbar: $('statusbar'),
   timer: $('timer'),
@@ -94,13 +98,20 @@ function boardRenderOpts() {
 const boardHandlers = {
   onTap: onCellActivate,
   isDragEnabled: () => settings.dragMark,
-  onDragStart: (r, c) => game.dragPaintValue(r, c),
+  onDragStart: (r, c) => {
+    game.beginDrag();
+    return game.dragPaintValue(r, c);
+  },
   onDragPaint: (r, c, value) => {
     if (game.paintCell(r, c, value)) {
       ui.updateBoard(el.board, game, boardRenderOpts());
     }
   },
-  onDragEnd: () => persist(),
+  onDragEnd: () => {
+    game.endDrag();
+    updateActionButtons();
+    persist();
+  },
 };
 
 function renderBoard() {
@@ -172,6 +183,7 @@ function startGame(puzzle, seed, restore) {
   el.hint.textContent = puzzle.n > UNIQUE_MAX_N ? 'Large board — may allow more than one solution.' : '';
   updateCodeDisplay();
   updateStats();
+  updateActionButtons();
   if (!game.isSolved()) {
     game.start();
     startTimer();
@@ -187,6 +199,49 @@ function onCellActivate(r, c) {
   if (!game || game.isSolved() || locked) return;
   game.cycle(r, c, { autoX: settings.autoX });
   ui.updateBoard(el.board, game, boardRenderOpts());
+  updateActionButtons();
+  if (game.isSolved()) handleWin();
+  else persist();
+}
+
+// Enable/disable the undo, redo, hint and clear buttons for the current state.
+function updateActionButtons() {
+  const active = !!game && !locked && !game.isSolved();
+  el.undoBtn.disabled = !(active && game.canUndo());
+  el.redoBtn.disabled = !(active && game.canRedo());
+  el.clearBtn.disabled = !(active && !game.isEmpty());
+  el.hintBtn.disabled = !active;
+}
+
+function doUndo() {
+  if (!game || locked || !game.undo()) return;
+  ui.updateBoard(el.board, game, boardRenderOpts());
+  updateActionButtons();
+  persist();
+}
+
+function doRedo() {
+  if (!game || locked || !game.redo()) return;
+  ui.updateBoard(el.board, game, boardRenderOpts());
+  updateActionButtons();
+  if (game.isSolved()) handleWin();
+  else persist();
+}
+
+function clearBoard() {
+  if (!game || locked || game.isSolved() || game.isEmpty()) return;
+  if (!window.confirm('Clear the board? You can undo this.')) return;
+  game.clear();
+  ui.updateBoard(el.board, game, boardRenderOpts());
+  updateActionButtons();
+  persist();
+}
+
+function giveHint() {
+  if (!game || locked || game.isSolved()) return;
+  if (!game.hint()) return;
+  ui.updateBoard(el.board, game, boardRenderOpts());
+  updateActionButtons();
   if (game.isSolved()) handleWin();
   else persist();
 }
@@ -195,6 +250,7 @@ function handleWin() {
   stopTimer();
   updateTimer();
   locked = true;
+  updateActionButtons();
   const ms = game.elapsedMs();
   const before = getBucket(stats, mode, currentN());
   const isBest = before.bestMs == null || ms < before.bestMs;
@@ -212,6 +268,7 @@ function giveUp() {
   stopTimer();
   locked = true;
   revealed = true;
+  updateActionButtons();
   ui.revealSolution(el.board, game, colors, settings.queenIcon);
   store.clearResume();
   ui.show(el.solutionModal);
@@ -432,6 +489,10 @@ function populateQueenPresets() {
 function wireEvents() {
   el.newBtn.addEventListener('click', newPuzzle);
   el.giveupBtn.addEventListener('click', giveUp);
+  el.undoBtn.addEventListener('click', doUndo);
+  el.redoBtn.addEventListener('click', doRedo);
+  el.hintBtn.addEventListener('click', giveHint);
+  el.clearBtn.addEventListener('click', clearBoard);
   el.settingsBtn.addEventListener('click', openSettings);
   el.settingsClose.addEventListener('click', () => ui.hide(el.settingsModal));
   el.difficulty.addEventListener('change', onDifficultyChange);

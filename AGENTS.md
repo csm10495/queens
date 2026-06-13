@@ -59,7 +59,8 @@ as an **offline PWA**. It runs on desktop and phone.
   working after a reload/resume).
 - **stats**: `{ easy|medium|hard|veryhard: {bestMs, wins}, custom: { [nAsString]: {bestMs, wins} } }`.
 - **history**: `Array<{ mode, n, timeMs, solvedAt, code? }>` — solved-puzzle log, newest-first,
-  capped at `MAX_ENTRIES` (50). Recorded on every win; powers the "Solved puzzles" (📜) view.
+  capped at `MAX_ENTRIES` (50). Recorded on every win; powers the "Solved puzzles" (📜) view,
+  opened from inside Settings. Entries with a `code` are tappable to replay that exact board.
 - **settings**: `{ theme, palette, queenIcon, autoX, highlightConflicts, showTimer, dragMark, continuousHints, defaultMode, customN }`
   (`queenIcon` is any emoji — sanitized to one grapheme, committed live as you type without
   rewriting the field mid-edit so Android IME / backspace-to-clear keep working;

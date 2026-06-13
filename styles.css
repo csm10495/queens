@@ -523,6 +523,16 @@ input[type='number'] {
   padding: 10px 2px;
   border-bottom: 1px solid var(--grid-line);
 }
+.history-item-play {
+  cursor: pointer;
+  border-radius: 8px;
+  padding: 10px 8px;
+}
+.history-item-play:hover,
+.history-item-play:focus-visible {
+  background: var(--grid-line);
+  outline: none;
+}
 .history-main {
   display: flex;
   align-items: baseline;

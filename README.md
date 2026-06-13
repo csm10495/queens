@@ -14,7 +14,8 @@ Every puzzle has a short **share code** (e.g. `9-1z3x`) shown under the board �
 copy a link (`?p=<code>`) that reopens the exact puzzle. In **Settings** you can set the **queen
 icon to any emoji**, change theme/palette, toggle assists, enable **continuous ✗ on hold**
 (press-and-drag to paint marks), enable **continuous hints** (flags a misplaced 👑 with a
-corner ✗ on single-solution boards), and load a puzzle by code.
+corner ✗ on single-solution boards), load a puzzle by code, and open your **Solved puzzles**
+history (📜) — tap any past puzzle to play it again.
 
 ## Run locally
 

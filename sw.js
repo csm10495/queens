@@ -20,6 +20,7 @@ const ASSETS = [
   './js/serialize.js',
   './js/stats.js',
   './js/storage.js',
+  './js/history.js',
   './js/settings.js',
   './js/modes.js',
   './js/pwa.js',

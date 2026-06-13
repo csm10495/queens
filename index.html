@@ -41,6 +41,7 @@
           </label>
           <button id="new-btn" class="btn">New</button>
           <button id="giveup-btn" class="btn btn-ghost">Give up</button>
+          <button id="history-btn" class="btn btn-icon" aria-label="Solved history" title="Solved history">📜</button>
           <button id="settings-btn" class="btn btn-icon" aria-label="Settings" title="Settings">⚙️</button>
         </div>
       </header>
@@ -196,6 +197,22 @@
             On iPhone/iPad: tap the Share button, then “Add to Home Screen”.
           </p>
           <button id="set-reset" class="btn btn-danger btn-block">Reset scores</button>
+        </div>
+      </div>
+    </div>
+
+    <!-- History -->
+    <div id="history-modal" class="modal hidden" role="dialog" aria-modal="true" aria-labelledby="history-title">
+      <div class="modal-card settings-card">
+        <div class="settings-head">
+          <h2 id="history-title">Solved puzzles</h2>
+          <button id="history-close" class="btn btn-icon" aria-label="Close history">✕</button>
+        </div>
+        <ul id="history-list" class="history-list"></ul>
+        <p id="history-empty" class="muted small hidden">No solved puzzles yet — go win one! 👑</p>
+        <hr />
+        <div class="settings-actions">
+          <button id="history-clear" class="btn btn-danger btn-block">Clear history</button>
         </div>
       </div>
     </div>

@@ -1,10 +1,12 @@
 import { deserializeState, serializeState } from './serialize.js';
 import { emptyStats } from './stats.js';
+import { normalizeHistory } from './history.js';
 
 export const KEYS = {
   stats: 'queens:stats',
   settings: 'queens:settings',
   resume: 'queens:resume',
+  history: 'queens:history',
 };
 
 const FIXED_MODES = ['easy', 'medium', 'hard', 'veryhard'];
@@ -124,6 +126,44 @@ export function saveSettings(obj, storage = defaultStorage()) {
 }
 
 /**
+ * Load the solved-puzzle history, falling back to an empty list.
+ * @param {Storage|object} [storage] Web Storage-like object.
+ * @returns {Array} Normalized history (newest first).
+ */
+export function loadHistory(storage = defaultStorage()) {
+  try {
+    const raw = storage.getItem(KEYS.history);
+    if (raw === null) return [];
+    return normalizeHistory(JSON.parse(raw));
+  } catch {
+    return [];
+  }
+}
+
+/**
+ * Save the solved-puzzle history.
+ * @param {Array} history History list to persist.
+ * @param {Storage|object} [storage] Web Storage-like object.
+ * @returns {void}
+ */
+export function saveHistory(history, storage = defaultStorage()) {
+  try {
+    storage.setItem(KEYS.history, JSON.stringify(normalizeHistory(history)));
+  } catch {
+    // Storage failures should not interrupt gameplay.
+  }
+}
+
+/**
+ * Remove the saved history.
+ * @param {Storage|object} [storage] Web Storage-like object.
+ * @returns {void}
+ */
+export function clearHistory(storage = defaultStorage()) {
+  safeRemove(KEYS.history, storage);
+}
+
+/**
  * Remove all Queens storage keys.
  * @param {Storage|object} [storage] Web Storage-like object.
  * @returns {void}
@@ -132,6 +172,7 @@ export function clearAll(storage = defaultStorage()) {
   safeRemove(KEYS.stats, storage);
   safeRemove(KEYS.settings, storage);
   safeRemove(KEYS.resume, storage);
+  safeRemove(KEYS.history, storage);
 }
 
 function defaultStorage() {

@@ -13,6 +13,7 @@ import {
 } from './modes.js';
 import * as store from './storage.js';
 import { recordWin, getBucket, emptyStats } from './stats.js';
+import { recordSolve } from './history.js';
 import { normalizeSettings, applyTheme, liveQueenIcon, QUEEN_PRESETS } from './settings.js';
 import { generatePuzzleForMode, UNIQUE_MAX_N } from './puzzle.js';
 import { encodePuzzleCode, parsePuzzleCode } from './code.js';
@@ -27,6 +28,7 @@ const el = {
   customSize: $('custom-size'),
   newBtn: $('new-btn'),
   giveupBtn: $('giveup-btn'),
+  historyBtn: $('history-btn'),
   undoBtn: $('undo-btn'),
   redoBtn: $('redo-btn'),
   hintBtn: $('hint-btn'),
@@ -47,6 +49,11 @@ const el = {
   solNext: $('sol-next'),
   settingsModal: $('settings-modal'),
   settingsClose: $('settings-close'),
+  historyModal: $('history-modal'),
+  historyClose: $('history-close'),
+  historyList: $('history-list'),
+  historyEmpty: $('history-empty'),
+  historyClear: $('history-clear'),
   setTheme: $('set-theme'),
   setPalette: $('set-palette'),
   setDefaultMode: $('set-default-mode'),
@@ -69,6 +76,7 @@ const el = {
 
 let settings = normalizeSettings(store.loadSettings());
 let stats = store.loadStats();
+let history = store.loadHistory();
 let mode = settings.defaultMode;
 let customN = settings.customN;
 let game = null;
@@ -256,6 +264,14 @@ function handleWin() {
   const isBest = before.bestMs == null || ms < before.bestMs;
   stats = recordWin(stats, mode, currentN(), ms);
   store.saveStats(stats);
+  history = recordSolve(history, {
+    mode,
+    n: currentN(),
+    timeMs: ms,
+    solvedAt: Date.now(),
+    ...(puzzleCodeStr() ? { code: puzzleCodeStr() } : {}),
+  });
+  store.saveHistory(history);
   store.clearResume();
   updateStats();
   el.winTime.textContent = ui.formatTime(ms);
@@ -454,6 +470,74 @@ function resetScores() {
   updateStats();
 }
 
+// ---- history ------------------------------------------------------------
+const MODE_NAME = (m) => MODE_LABELS[m] ?? m;
+
+function formatSolvedAt(ts) {
+  try {
+    return new Date(ts).toLocaleString(undefined, {
+      month: 'short',
+      day: 'numeric',
+      hour: 'numeric',
+      minute: '2-digit',
+    });
+  } catch {
+    return '';
+  }
+}
+
+function renderHistory() {
+  el.historyList.innerHTML = '';
+  el.historyList.classList.toggle('hidden', history.length === 0);
+  el.historyEmpty.classList.toggle('hidden', history.length !== 0);
+
+  const frag = document.createDocumentFragment();
+  for (const entry of history) {
+    const li = document.createElement('li');
+    li.className = 'history-item';
+
+    const main = document.createElement('div');
+    main.className = 'history-main';
+    const label = document.createElement('span');
+    label.className = 'history-mode';
+    label.textContent = `${MODE_NAME(entry.mode)} (${entry.n}×${entry.n})`;
+    const time = document.createElement('span');
+    time.className = 'history-time';
+    time.textContent = `⏱ ${ui.formatTime(entry.timeMs)}`;
+    main.append(label, time);
+
+    const meta = document.createElement('div');
+    meta.className = 'history-meta';
+    const date = document.createElement('span');
+    date.className = 'history-date';
+    date.textContent = formatSolvedAt(entry.solvedAt);
+    meta.appendChild(date);
+    if (entry.code) {
+      const code = document.createElement('code');
+      code.className = 'history-code';
+      code.textContent = entry.code;
+      meta.appendChild(code);
+    }
+
+    li.append(main, meta);
+    frag.appendChild(li);
+  }
+  el.historyList.appendChild(frag);
+}
+
+function openHistory() {
+  renderHistory();
+  ui.show(el.historyModal);
+}
+
+function clearHistoryList() {
+  if (history.length === 0) return;
+  if (!window.confirm('Clear your solved-puzzle history?')) return;
+  history = [];
+  store.clearHistory();
+  renderHistory();
+}
+
 // ---- install (PWA) ------------------------------------------------------
 function refreshInstallButton() {
   const st = pwa.getInstallState();
@@ -519,6 +603,12 @@ function wireEvents() {
   el.clearBtn.addEventListener('click', clearBoard);
   el.settingsBtn.addEventListener('click', openSettings);
   el.settingsClose.addEventListener('click', () => ui.hide(el.settingsModal));
+  el.historyBtn.addEventListener('click', openHistory);
+  el.historyClose.addEventListener('click', () => ui.hide(el.historyModal));
+  el.historyClear.addEventListener('click', clearHistoryList);
+  el.historyModal.addEventListener('click', (e) => {
+    if (e.target === el.historyModal) ui.hide(el.historyModal);
+  });
   el.difficulty.addEventListener('change', onDifficultyChange);
   el.customSize.addEventListener('change', onCustomChange);
   el.winNext.addEventListener('click', newPuzzle);

@@ -11,6 +11,7 @@ export const DEFAULT_SETTINGS = Object.freeze({
   defaultMode: 'easy', // mode used on first load / new game
   customN: 10, // remembered custom board size
   queenIcon: '👑', // glyph used for queens
+  dragMark: false, // press-and-drag to paint ✗ marks across cells
 });
 
 export const QUEEN_PRESETS = Object.freeze(['👑', '♛', '⭐', '❤️', '🔥', '🌸', '🦄', '💎']);
@@ -57,6 +58,7 @@ export function normalizeSettings(obj) {
     defaultMode: MODES.includes(s.defaultMode) ? s.defaultMode : DEFAULT_SETTINGS.defaultMode,
     customN: clampCustom(s.customN ?? DEFAULT_SETTINGS.customN),
     queenIcon: sanitizeQueenIcon(s.queenIcon ?? DEFAULT_SETTINGS.queenIcon),
+    dragMark: bool(s.dragMark, DEFAULT_SETTINGS.dragMark),
   };
 }
 

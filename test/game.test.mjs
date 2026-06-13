@@ -77,6 +77,34 @@ test('timer accumulates while running and stops on solve', () => {
   assert.equal(g.elapsedMs(), atSolve);
 });
 
+test('paintCell paints and erases marks but never touches queens', () => {
+  const p = makePuzzle(8, 33);
+  const g = createGame(p);
+  // paint a mark on an empty cell
+  assert.equal(g.paintCell(0, 0, MARK), true);
+  assert.equal(g.cells[0][0], MARK);
+  // painting MARK again is a no-op
+  assert.equal(g.paintCell(0, 0, MARK), false);
+  // erase it
+  assert.equal(g.paintCell(0, 0, EMPTY), true);
+  assert.equal(g.cells[0][0], EMPTY);
+  // erasing an empty cell is a no-op
+  assert.equal(g.paintCell(0, 0, EMPTY), false);
+  // a queen is never overwritten by paint/erase
+  placeQueen(g, 2, p.solution[2]);
+  assert.equal(g.cells[2][p.solution[2]], QUEEN);
+  assert.equal(g.paintCell(2, p.solution[2], MARK), false);
+  assert.equal(g.paintCell(2, p.solution[2], EMPTY), false);
+  assert.equal(g.cells[2][p.solution[2]], QUEEN);
+});
+
+test('dragPaintValue erases when starting on a mark, else paints a mark', () => {
+  const g = createGame(makePuzzle(7, 4));
+  assert.equal(g.dragPaintValue(1, 1), MARK); // empty -> paint
+  g.paintCell(1, 1, MARK);
+  assert.equal(g.dragPaintValue(1, 1), EMPTY); // mark -> erase
+});
+
 test('toState snapshots and restores cells + elapsed time', () => {
   const p = makePuzzle(7, 21);
   let t = 0;

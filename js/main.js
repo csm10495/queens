@@ -16,6 +16,7 @@ import { recordWin, getBucket, emptyStats } from './stats.js';
 import { normalizeSettings, applyTheme, QUEEN_PRESETS } from './settings.js';
 import { generatePuzzleForMode, UNIQUE_MAX_N } from './puzzle.js';
 import { encodePuzzleCode, parsePuzzleCode } from './code.js';
+import { EMPTY, MARK } from './rules.js';
 import { mulberry32, randomSeed } from './rng.js';
 import * as pwa from './pwa.js';
 
@@ -48,6 +49,7 @@ const el = {
   setAutoX: $('set-autox'),
   setHighlight: $('set-highlight'),
   setTimer: $('set-timer'),
+  setDrag: $('set-drag'),
   setInstall: $('set-install'),
   setInstallHint: $('set-install-hint'),
   setReset: $('set-reset'),
@@ -77,6 +79,31 @@ let currentSeed = null; // seed of the current puzzle (for share codes)
 const modeLabel = (m) =>
   m === 'custom' ? MODE_LABELS[m] : `${MODE_LABELS[m]} (${FIXED_SIZES[m]}×${FIXED_SIZES[m]})`;
 const currentN = () => sizeForMode(mode, customN);
+
+// Board interaction handlers shared by every createBoard call.
+const boardHandlers = {
+  onTap: onCellActivate,
+  isDragEnabled: () => settings.dragMark,
+  onDragStart: (r, c) => game.dragPaintValue(r, c),
+  onDragPaint: (r, c, value) => {
+    if (game.paintCell(r, c, value)) {
+      ui.updateBoard(el.board, game, {
+        highlightConflicts: settings.highlightConflicts,
+        queenIcon: settings.queenIcon,
+      });
+    }
+  },
+  onDragEnd: () => persist(),
+};
+
+function renderBoard() {
+  ui.createBoard(el.board, game, colors, boardHandlers);
+  applyDragMark();
+}
+
+function applyDragMark() {
+  el.board.classList.toggle('drag-mark', settings.dragMark);
+}
 
 // ---- generation (Web Worker with main-thread fallback) ------------------
 function initWorker() {
@@ -131,7 +158,7 @@ function startGame(puzzle, seed, restore) {
   });
   currentSeed = game.seed ?? null;
   colors = regionColors(puzzle.n, settings.palette);
-  ui.createBoard(el.board, game, colors, onCellActivate);
+  renderBoard();
   ui.updateBoard(el.board, game, {
     highlightConflicts: settings.highlightConflicts,
     queenIcon: settings.queenIcon,
@@ -292,6 +319,7 @@ function openSettings() {
   el.setAutoX.checked = settings.autoX;
   el.setHighlight.checked = settings.highlightConflicts;
   el.setTimer.checked = settings.showTimer;
+  el.setDrag.checked = settings.dragMark;
   el.setQueen.value = settings.queenIcon;
   el.loadCode.value = '';
   el.loadCode.classList.remove('invalid');
@@ -311,6 +339,7 @@ function onSettingsChange() {
     autoX: el.setAutoX.checked,
     highlightConflicts: el.setHighlight.checked,
     showTimer: el.setTimer.checked,
+    dragMark: el.setDrag.checked,
     queenIcon: el.setQueen.value,
     customN,
   });
@@ -319,7 +348,7 @@ function onSettingsChange() {
   // Re-render the board for palette / queen-icon changes without disturbing play.
   if (game) {
     colors = regionColors(game.n, settings.palette);
-    ui.createBoard(el.board, game, colors, onCellActivate);
+    renderBoard();
     if (revealed) {
       ui.revealSolution(el.board, game, colors, settings.queenIcon);
     } else {
@@ -329,6 +358,7 @@ function onSettingsChange() {
       });
     }
   }
+  applyDragMark();
   el.setQueen.value = settings.queenIcon;
   saveSettings();
 }
@@ -408,7 +438,7 @@ function wireEvents() {
   el.customSize.addEventListener('change', onCustomChange);
   el.winNext.addEventListener('click', newPuzzle);
   el.solNext.addEventListener('click', newPuzzle);
-  for (const c of [el.setTheme, el.setPalette, el.setDefaultMode, el.setAutoX, el.setHighlight, el.setTimer]) {
+  for (const c of [el.setTheme, el.setPalette, el.setDefaultMode, el.setAutoX, el.setHighlight, el.setTimer, el.setDrag]) {
     c.addEventListener('change', onSettingsChange);
   }
   el.setReset.addEventListener('click', resetScores);

@@ -220,6 +220,11 @@ input[type='number'] {
   user-select: none;
   box-shadow: var(--shadow);
 }
+/* Continuous-mark mode: stop touch scrolling on the board so a finger drag
+   paints ✗ marks instead of panning the page. */
+.board.drag-mark {
+  touch-action: none;
+}
 .cell {
   position: relative;
   display: flex;

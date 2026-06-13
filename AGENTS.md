@@ -57,8 +57,8 @@ as an **offline PWA**. It runs on desktop and phone.
 - **state** (resume): `{ version:1, mode, n, seed?, regions, solution, cells, elapsedMs, solved }`
   (`seed` is what powers shareable puzzle codes).
 - **stats**: `{ easy|medium|hard|veryhard: {bestMs, wins}, custom: { [nAsString]: {bestMs, wins} } }`.
-- **settings**: `{ theme, palette, queenIcon, autoX, highlightConflicts, showTimer, defaultMode, customN }`
-  (`queenIcon` is any emoji — sanitized to one grapheme).
+- **settings**: `{ theme, palette, queenIcon, autoX, highlightConflicts, showTimer, dragMark, defaultMode, customN }`
+  (`queenIcon` is any emoji — sanitized to one grapheme; `dragMark` enables press-and-drag ✗ painting).
 
 ### Pure, DOM-free modules (unit-tested directly)
 - `js/rng.js` — seedable PRNG (`mulberry32`, `randInt`, `shuffle`) for deterministic generation.
@@ -83,6 +83,8 @@ as an **offline PWA**. It runs on desktop and phone.
   injected storage for tests.
 - `js/worker.js` — Web Worker that runs generation off the main thread.
 - `js/ui.js` — board rendering, region borders, timer formatting, modal/banner helpers.
+  `createBoard` takes a handlers object; interaction is pointer-based (tap cycles; when
+  `dragMark` is on, press-and-drag paints/erases ✗ marks via `game.paintCell`).
 - `js/pwa.js` — service-worker registration + `beforeinstallprompt` handling.
 - `js/main.js` — bootstrap: wires worker, board, timer, persistence, settings, PWA.
 - `index.html`, `styles.css` — responsive app shell + CSS-variable theming (light/dark).

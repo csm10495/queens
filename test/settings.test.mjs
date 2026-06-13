@@ -32,6 +32,7 @@ test('normalizeSettings accepts valid values', () => {
     defaultMode: 'veryhard',
     customN: 14,
     queenIcon: '🍕',
+    dragMark: true,
   });
   assert.deepEqual(s, {
     theme: 'dark',
@@ -42,6 +43,7 @@ test('normalizeSettings accepts valid values', () => {
     defaultMode: 'veryhard',
     customN: 14,
     queenIcon: '🍕',
+    dragMark: true,
   });
 });
 
@@ -52,6 +54,14 @@ test('normalizeSettings clamps customN and coerces non-booleans', () => {
   // non-boolean assist values fall back to defaults
   assert.equal(normalizeSettings({ autoX: 'yes' }).autoX, DEFAULT_SETTINGS.autoX);
   assert.equal(normalizeSettings({ showTimer: 1 }).showTimer, DEFAULT_SETTINGS.showTimer);
+  assert.equal(normalizeSettings({ dragMark: 'on' }).dragMark, DEFAULT_SETTINGS.dragMark);
+});
+
+test('dragMark defaults to false and accepts booleans', () => {
+  assert.equal(DEFAULT_SETTINGS.dragMark, false);
+  assert.equal(normalizeSettings({}).dragMark, false);
+  assert.equal(normalizeSettings({ dragMark: true }).dragMark, true);
+  assert.equal(normalizeSettings({ dragMark: false }).dragMark, false);
 });
 
 test('queen icon defaults and presets are exposed', () => {

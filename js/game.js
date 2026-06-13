@@ -76,6 +76,34 @@ export function createGame(puzzle, opts = {}) {
     return solved;
   }
 
+  /**
+   * Directly set a cell during a drag-paint, without cycling. Only EMPTY<->MARK
+   * transitions are allowed; QUEEN cells are never touched (so a drag can't wipe
+   * or create queens). Returns true if the cell changed.
+   * @param {number} r
+   * @param {number} c
+   * @param {number} value - MARK to paint, EMPTY to erase
+   */
+  function paintCell(r, c, value) {
+    if (solved) return false;
+    const cur = cells[r][c];
+    if (cur === QUEEN) return false;
+    if (value === MARK && cur === EMPTY) {
+      cells[r][c] = MARK;
+      return true;
+    }
+    if (value === EMPTY && cur === MARK) {
+      cells[r][c] = EMPTY;
+      return true;
+    }
+    return false;
+  }
+
+  /** The value a drag starting on (r,c) should paint: erase if on a mark, else mark. */
+  function dragPaintValue(r, c) {
+    return cells[r][c] === MARK ? EMPTY : MARK;
+  }
+
   function conflicts() {
     return findConflicts(cells, regions);
   }
@@ -113,6 +141,8 @@ export function createGame(puzzle, opts = {}) {
     elapsedMs,
     cycle,
     autoMark,
+    paintCell,
+    dragPaintValue,
     conflicts,
     checkSolved,
     isSolved: () => solved,

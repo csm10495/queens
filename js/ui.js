@@ -32,13 +32,28 @@ const MARK_GLYPH = '✗';
 
 /**
  * Build the board grid for a game. Cells are coloured by region with thick
- * borders between different regions. Uses event delegation for taps/clicks.
+ * borders between different regions.
+ *
+ * Interaction is pointer-based so it works for mouse and touch:
+ *  - A plain tap/click cycles a cell (handlers.onTap).
+ *  - When handlers.isDragEnabled() is true, pressing and dragging across cells
+ *    paints (or erases) ✗ marks: handlers.onDragStart(r,c) returns the value to
+ *    paint, handlers.onDragPaint(r,c,value) applies it per cell, handlers.onDragEnd()
+ *    finalizes. A drag begins only once the pointer crosses into a different cell,
+ *    so taps still cycle normally.
+ *
  * @param {HTMLElement} boardEl
  * @param {ReturnType<import('./game.js').createGame>} game
  * @param {string[]} colors - region colours, indexed by region id
- * @param {(r:number,c:number)=>void} onActivate
+ * @param {{
+ *   onTap:(r:number,c:number)=>void,
+ *   isDragEnabled?:()=>boolean,
+ *   onDragStart?:(r:number,c:number)=>number,
+ *   onDragPaint?:(r:number,c:number,value:number)=>void,
+ *   onDragEnd?:()=>void,
+ * }} handlers
  */
-export function createBoard(boardEl, game, colors, onActivate) {
+export function createBoard(boardEl, game, colors, handlers) {
   const { n, regions } = game;
   boardEl.style.setProperty('--n', n);
   boardEl.classList.remove('solved', 'revealed');
@@ -66,14 +81,89 @@ export function createBoard(boardEl, game, colors, onActivate) {
   }
   boardEl.appendChild(frag);
 
-  if (boardEl._queensHandler) boardEl.removeEventListener('click', boardEl._queensHandler);
-  const handler = (e) => {
+  attachInteraction(boardEl, handlers);
+}
+
+function attachInteraction(boardEl, handlers) {
+  // Remove any listeners from a previous board build on this element.
+  if (boardEl._queensListeners) {
+    for (const [type, fn] of boardEl._queensListeners) boardEl.removeEventListener(type, fn);
+  }
+
+  const dragEnabled = () => (handlers.isDragEnabled ? handlers.isDragEnabled() : false);
+  const coords = (cell) => [Number(cell.dataset.r), Number(cell.dataset.c)];
+  const cellAtPoint = (x, y) => {
+    const t = document.elementFromPoint(x, y);
+    const cell = t && t.closest ? t.closest('.cell') : null;
+    return cell && boardEl.contains(cell) ? cell : null;
+  };
+
+  let startCell = null;
+  let painting = false;
+  let paintValue = 0;
+  let lastKey = '';
+  let suppressClick = false;
+
+  const onPointerDown = (e) => {
+    if (!dragEnabled() || e.button > 0) return;
+    const cell = e.target.closest && e.target.closest('.cell');
+    if (!cell || !boardEl.contains(cell)) return;
+    startCell = cell;
+    painting = false;
+    lastKey = '';
+  };
+
+  const onPointerMove = (e) => {
+    if (!startCell) return;
+    const cell = cellAtPoint(e.clientX, e.clientY);
+    if (!cell) return;
+    const [r, c] = coords(cell);
+    const key = `${r},${c}`;
+    if (!painting) {
+      if (cell === startCell) return; // same cell → still a potential tap
+      const [sr, sc] = coords(startCell);
+      paintValue = handlers.onDragStart ? handlers.onDragStart(sr, sc) : 0;
+      painting = true;
+      handlers.onDragPaint && handlers.onDragPaint(sr, sc, paintValue);
+      lastKey = `${sr},${sc}`;
+    }
+    if (key !== lastKey) {
+      handlers.onDragPaint && handlers.onDragPaint(r, c, paintValue);
+      lastKey = key;
+    }
+    e.preventDefault();
+  };
+
+  const endPointer = () => {
+    if (painting) {
+      suppressClick = true; // swallow the click that follows a paint drag
+      handlers.onDragEnd && handlers.onDragEnd();
+    }
+    startCell = null;
+    painting = false;
+    lastKey = '';
+  };
+
+  const onClick = (e) => {
+    if (suppressClick) {
+      suppressClick = false;
+      return;
+    }
     const cell = e.target.closest('.cell');
     if (!cell || !boardEl.contains(cell)) return;
-    onActivate(Number(cell.dataset.r), Number(cell.dataset.c));
+    handlers.onTap(...coords(cell));
   };
-  boardEl._queensHandler = handler;
-  boardEl.addEventListener('click', handler);
+
+  const listeners = [
+    ['pointerdown', onPointerDown],
+    ['pointermove', onPointerMove],
+    ['pointerup', endPointer],
+    ['pointercancel', endPointer],
+    ['pointerleave', endPointer],
+    ['click', onClick],
+  ];
+  for (const [type, fn] of listeners) boardEl.addEventListener(type, fn);
+  boardEl._queensListeners = listeners;
 }
 
 /** Repaint glyphs + conflict highlights from the current game state. */

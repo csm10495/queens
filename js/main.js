@@ -496,6 +496,22 @@ function renderHistory() {
     const li = document.createElement('li');
     li.className = 'history-item';
 
+    const parsed = entry.code ? parsePuzzleCode(entry.code) : null;
+    if (parsed) {
+      li.classList.add('history-item-play');
+      li.setAttribute('role', 'button');
+      li.tabIndex = 0;
+      li.title = 'Play this puzzle';
+      const play = () => playHistoryEntry(parsed);
+      li.addEventListener('click', play);
+      li.addEventListener('keydown', (e) => {
+        if (e.key === 'Enter' || e.key === ' ') {
+          e.preventDefault();
+          play();
+        }
+      });
+    }
+
     const main = document.createElement('div');
     main.className = 'history-main';
     const label = document.createElement('span');
@@ -525,8 +541,18 @@ function renderHistory() {
   el.historyList.appendChild(frag);
 }
 
+function playHistoryEntry(parsed) {
+  mode = modeForSize(parsed.n);
+  customN = parsed.n;
+  syncDifficultyUI();
+  ui.hide(el.historyModal);
+  hideModals();
+  newPuzzle({ seed: parsed.seed });
+}
+
 function openHistory() {
   renderHistory();
+  ui.hide(el.settingsModal);
   ui.show(el.historyModal);
 }
 

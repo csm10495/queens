@@ -33,6 +33,7 @@ test('normalizeSettings accepts valid values', () => {
     customN: 14,
     queenIcon: '🍕',
     dragMark: true,
+    continuousHints: true,
   });
   assert.deepEqual(s, {
     theme: 'dark',
@@ -44,6 +45,7 @@ test('normalizeSettings accepts valid values', () => {
     customN: 14,
     queenIcon: '🍕',
     dragMark: true,
+    continuousHints: true,
   });
 });
 
@@ -62,6 +64,13 @@ test('dragMark defaults to false and accepts booleans', () => {
   assert.equal(normalizeSettings({}).dragMark, false);
   assert.equal(normalizeSettings({ dragMark: true }).dragMark, true);
   assert.equal(normalizeSettings({ dragMark: false }).dragMark, false);
+});
+
+test('continuousHints defaults to false and accepts booleans', () => {
+  assert.equal(DEFAULT_SETTINGS.continuousHints, false);
+  assert.equal(normalizeSettings({}).continuousHints, false);
+  assert.equal(normalizeSettings({ continuousHints: true }).continuousHints, true);
+  assert.equal(normalizeSettings({ continuousHints: 'yes' }).continuousHints, false);
 });
 
 test('queen icon defaults and presets are exposed', () => {

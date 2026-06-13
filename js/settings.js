@@ -12,6 +12,7 @@ export const DEFAULT_SETTINGS = Object.freeze({
   customN: 10, // remembered custom board size
   queenIcon: '👑', // glyph used for queens
   dragMark: false, // press-and-drag to paint ✗ marks across cells
+  continuousHints: false, // flag a misplaced queen with a corner ✗ (unique boards only)
 });
 
 export const QUEEN_PRESETS = Object.freeze(['👑', '♛', '⭐', '❤️', '🔥', '🌸', '🦄', '💎']);
@@ -59,6 +60,7 @@ export function normalizeSettings(obj) {
     customN: clampCustom(s.customN ?? DEFAULT_SETTINGS.customN),
     queenIcon: sanitizeQueenIcon(s.queenIcon ?? DEFAULT_SETTINGS.queenIcon),
     dragMark: bool(s.dragMark, DEFAULT_SETTINGS.dragMark),
+    continuousHints: bool(s.continuousHints, DEFAULT_SETTINGS.continuousHints),
   };
 }
 

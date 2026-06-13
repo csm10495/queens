@@ -167,10 +167,18 @@ function attachInteraction(boardEl, handlers) {
 }
 
 /** Repaint glyphs + conflict highlights from the current game state. */
-export function updateBoard(boardEl, game, { highlightConflicts, queenIcon = '👑' }) {
+export function updateBoard(
+  boardEl,
+  game,
+  { highlightConflicts, queenIcon = '👑', continuousHints = false }
+) {
   const { n, cells } = game;
   const conflictSet = new Set();
   if (highlightConflicts) for (const { r, c } of game.conflicts()) conflictSet.add(r * n + c);
+
+  // Continuous hints only make sense when there is a single intended solution:
+  // a queen not on the solution cell is provably wrong on a unique board.
+  const hintsOn = continuousHints && game.unique && Array.isArray(game.solution);
 
   const nodes = boardEl.children;
   for (let i = 0; i < nodes.length; i++) {
@@ -183,6 +191,7 @@ export function updateBoard(boardEl, game, { highlightConflicts, queenIcon = '�
     glyph.classList.toggle('queen', state === QUEEN);
     glyph.classList.toggle('mark', state === MARK);
     cell.classList.toggle('conflict', conflictSet.has(r * n + c));
+    cell.classList.toggle('hint-wrong', hintsOn && state === QUEEN && game.solution[r] !== c);
   }
   boardEl.classList.toggle('solved', game.isSolved());
 }

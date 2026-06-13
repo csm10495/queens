@@ -13,7 +13,8 @@ Difficulties: Easy 7×7 · Medium 8×8 · Hard 9×9 · Very Hard 15×15 · Custo
 Every puzzle has a short **share code** (e.g. `9-1z3x`) shown under the board — tap **Share** to
 copy a link (`?p=<code>`) that reopens the exact puzzle. In **Settings** you can set the **queen
 icon to any emoji**, change theme/palette, toggle assists, enable **continuous ✗ on hold**
-(press-and-drag to paint marks), and load a puzzle by code.
+(press-and-drag to paint marks), enable **continuous hints** (flags a misplaced 👑 with a
+corner ✗ on single-solution boards), and load a puzzle by code.
 
 ## Run locally
 

@@ -57,8 +57,9 @@ as an **offline PWA**. It runs on desktop and phone.
 - **state** (resume): `{ version:1, mode, n, seed?, regions, solution, cells, elapsedMs, solved }`
   (`seed` is what powers shareable puzzle codes).
 - **stats**: `{ easy|medium|hard|veryhard: {bestMs, wins}, custom: { [nAsString]: {bestMs, wins} } }`.
-- **settings**: `{ theme, palette, queenIcon, autoX, highlightConflicts, showTimer, dragMark, defaultMode, customN }`
-  (`queenIcon` is any emoji — sanitized to one grapheme; `dragMark` enables press-and-drag ✗ painting).
+- **settings**: `{ theme, palette, queenIcon, autoX, highlightConflicts, showTimer, dragMark, continuousHints, defaultMode, customN }`
+  (`queenIcon` is any emoji — sanitized to one grapheme; `dragMark` enables press-and-drag ✗
+  painting; `continuousHints` flags a misplaced queen with a corner ✗, only on `unique` boards).
 
 ### Pure, DOM-free modules (unit-tested directly)
 - `js/rng.js` — seedable PRNG (`mulberry32`, `randInt`, `shuffle`) for deterministic generation.

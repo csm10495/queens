@@ -50,6 +50,7 @@ const el = {
   setHighlight: $('set-highlight'),
   setTimer: $('set-timer'),
   setDrag: $('set-drag'),
+  setHints: $('set-hints'),
   setInstall: $('set-install'),
   setInstallHint: $('set-install-hint'),
   setReset: $('set-reset'),
@@ -80,6 +81,15 @@ const modeLabel = (m) =>
   m === 'custom' ? MODE_LABELS[m] : `${MODE_LABELS[m]} (${FIXED_SIZES[m]}×${FIXED_SIZES[m]})`;
 const currentN = () => sizeForMode(mode, customN);
 
+// Standard options for ui.updateBoard, so every repaint stays consistent.
+function boardRenderOpts() {
+  return {
+    highlightConflicts: settings.highlightConflicts,
+    queenIcon: settings.queenIcon,
+    continuousHints: settings.continuousHints,
+  };
+}
+
 // Board interaction handlers shared by every createBoard call.
 const boardHandlers = {
   onTap: onCellActivate,
@@ -87,10 +97,7 @@ const boardHandlers = {
   onDragStart: (r, c) => game.dragPaintValue(r, c),
   onDragPaint: (r, c, value) => {
     if (game.paintCell(r, c, value)) {
-      ui.updateBoard(el.board, game, {
-        highlightConflicts: settings.highlightConflicts,
-        queenIcon: settings.queenIcon,
-      });
+      ui.updateBoard(el.board, game, boardRenderOpts());
     }
   },
   onDragEnd: () => persist(),
@@ -159,10 +166,7 @@ function startGame(puzzle, seed, restore) {
   currentSeed = game.seed ?? null;
   colors = regionColors(puzzle.n, settings.palette);
   renderBoard();
-  ui.updateBoard(el.board, game, {
-    highlightConflicts: settings.highlightConflicts,
-    queenIcon: settings.queenIcon,
-  });
+  ui.updateBoard(el.board, game, boardRenderOpts());
   locked = false;
   revealed = false;
   el.hint.textContent = puzzle.n > UNIQUE_MAX_N ? 'Large board — may allow more than one solution.' : '';
@@ -182,10 +186,7 @@ function startGame(puzzle, seed, restore) {
 function onCellActivate(r, c) {
   if (!game || game.isSolved() || locked) return;
   game.cycle(r, c, { autoX: settings.autoX });
-  ui.updateBoard(el.board, game, {
-    highlightConflicts: settings.highlightConflicts,
-    queenIcon: settings.queenIcon,
-  });
+  ui.updateBoard(el.board, game, boardRenderOpts());
   if (game.isSolved()) handleWin();
   else persist();
 }
@@ -320,6 +321,7 @@ function openSettings() {
   el.setHighlight.checked = settings.highlightConflicts;
   el.setTimer.checked = settings.showTimer;
   el.setDrag.checked = settings.dragMark;
+  el.setHints.checked = settings.continuousHints;
   el.setQueen.value = settings.queenIcon;
   el.loadCode.value = '';
   el.loadCode.classList.remove('invalid');
@@ -340,6 +342,7 @@ function onSettingsChange() {
     highlightConflicts: el.setHighlight.checked,
     showTimer: el.setTimer.checked,
     dragMark: el.setDrag.checked,
+    continuousHints: el.setHints.checked,
     queenIcon: el.setQueen.value,
     customN,
   });
@@ -352,10 +355,7 @@ function onSettingsChange() {
     if (revealed) {
       ui.revealSolution(el.board, game, colors, settings.queenIcon);
     } else {
-      ui.updateBoard(el.board, game, {
-        highlightConflicts: settings.highlightConflicts,
-        queenIcon: settings.queenIcon,
-      });
+      ui.updateBoard(el.board, game, boardRenderOpts());
     }
   }
   applyDragMark();
@@ -438,7 +438,7 @@ function wireEvents() {
   el.customSize.addEventListener('change', onCustomChange);
   el.winNext.addEventListener('click', newPuzzle);
   el.solNext.addEventListener('click', newPuzzle);
-  for (const c of [el.setTheme, el.setPalette, el.setDefaultMode, el.setAutoX, el.setHighlight, el.setTimer, el.setDrag]) {
+  for (const c of [el.setTheme, el.setPalette, el.setDefaultMode, el.setAutoX, el.setHighlight, el.setTimer, el.setDrag, el.setHints]) {
     c.addEventListener('change', onSettingsChange);
   }
   el.setReset.addEventListener('click', resetScores);

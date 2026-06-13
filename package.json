@@ -1,0 +1,10 @@
+{
+  "name": "queens",
+  "version": "0.1.0",
+  "private": true,
+  "type": "module",
+  "description": "LinkedIn-style Queens puzzle game — vanilla HTML/CSS/JS, installable offline PWA.",
+  "scripts": {
+    "test": "node --test"
+  }
+}

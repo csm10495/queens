@@ -1,0 +1,147 @@
+<!doctype html>
+<html lang="en" data-theme="dark">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover" />
+    <meta name="theme-color" content="#4f46e5" />
+    <title>Queens</title>
+    <meta
+      name="description"
+      content="A LinkedIn-style Queens puzzle: one queen per row, column and color region. Endless solvable puzzles, fully offline."
+    />
+    <link rel="manifest" href="manifest.webmanifest" />
+    <link rel="icon" href="icons/favicon.png" sizes="48x48" />
+    <link rel="apple-touch-icon" href="icons/apple-touch-icon.png" />
+    <meta name="apple-mobile-web-app-capable" content="yes" />
+    <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent" />
+    <meta name="apple-mobile-web-app-title" content="Queens" />
+    <link rel="stylesheet" href="styles.css" />
+  </head>
+  <body>
+    <div id="app">
+      <header class="topbar">
+        <div class="brand">👑 <span>Queens</span></div>
+        <div class="controls">
+          <label class="field">
+            <span class="sr-only">Difficulty</span>
+            <select id="difficulty" aria-label="Difficulty"></select>
+          </label>
+          <label class="field hidden" id="custom-size-field">
+            <span class="sr-only">Custom board size</span>
+            <input
+              id="custom-size"
+              type="number"
+              min="6"
+              max="20"
+              step="1"
+              value="10"
+              inputmode="numeric"
+              aria-label="Custom board size (6 to 20)"
+            />
+          </label>
+          <button id="new-btn" class="btn">New</button>
+          <button id="giveup-btn" class="btn btn-ghost">Give up</button>
+          <button id="settings-btn" class="btn btn-icon" aria-label="Settings" title="Settings">⚙️</button>
+        </div>
+      </header>
+
+      <section class="statusbar" id="statusbar">
+        <div class="stat time">
+          <span class="stat-label">Time</span>
+          <span id="timer" class="stat-value">0:00</span>
+        </div>
+        <div class="stat">
+          <span class="stat-label">Best</span>
+          <span id="best" class="stat-value">—</span>
+        </div>
+        <div class="stat">
+          <span class="stat-label">Solved</span>
+          <span id="wins" class="stat-value">0</span>
+        </div>
+        <div id="hint" class="hint"></div>
+      </section>
+
+      <main class="board-wrap">
+        <div id="board" class="board" role="grid" aria-label="Queens board"></div>
+        <div id="loading" class="overlay hidden">
+          <div class="spinner"></div>
+          <p>Generating…</p>
+        </div>
+      </main>
+
+      <p class="rule-hint">
+        One 👑 per row, column &amp; color. Queens can’t touch — not even diagonally. Tap a cell: ▢ → ✗ → 👑.
+      </p>
+    </div>
+
+    <!-- Win banner (bottom sheet, leaves the solved board visible) -->
+    <div id="win-modal" class="sheet hidden" role="status" aria-live="polite">
+      <div class="sheet-card">
+        <div class="sheet-text">
+          <div class="sheet-title">🎉 Solved in <span id="win-time">0:00</span></div>
+          <div class="sheet-sub" id="win-best"></div>
+        </div>
+        <button id="win-next" class="btn btn-primary">Next puzzle</button>
+      </div>
+    </div>
+
+    <!-- Give-up banner (bottom sheet, leaves the revealed solution visible) -->
+    <div id="solution-modal" class="sheet hidden" role="status" aria-live="polite">
+      <div class="sheet-card">
+        <div class="sheet-text">
+          <div class="sheet-title">Solution revealed</div>
+          <div class="sheet-sub">Here’s one valid answer.</div>
+        </div>
+        <button id="sol-next" class="btn btn-primary">Next puzzle</button>
+      </div>
+    </div>
+
+    <!-- Settings -->
+    <div id="settings-modal" class="modal hidden" role="dialog" aria-modal="true" aria-labelledby="settings-title">
+      <div class="modal-card settings-card">
+        <div class="settings-head">
+          <h2 id="settings-title">Settings</h2>
+          <button id="settings-close" class="btn btn-icon" aria-label="Close settings">✕</button>
+        </div>
+
+        <div class="setting">
+          <label for="set-theme">Appearance</label>
+          <select id="set-theme">
+            <option value="system">System</option>
+            <option value="light">Light</option>
+            <option value="dark">Dark</option>
+          </select>
+        </div>
+        <div class="setting">
+          <label for="set-palette">Color palette</label>
+          <select id="set-palette"></select>
+        </div>
+        <div class="setting">
+          <label for="set-default-mode">Default difficulty</label>
+          <select id="set-default-mode"></select>
+        </div>
+        <div class="setting switch">
+          <label for="set-autox">Auto-place ✗ marks</label>
+          <input type="checkbox" id="set-autox" />
+        </div>
+        <div class="setting switch">
+          <label for="set-highlight">Highlight conflicts</label>
+          <input type="checkbox" id="set-highlight" />
+        </div>
+        <div class="setting switch">
+          <label for="set-timer">Show timer</label>
+          <input type="checkbox" id="set-timer" />
+        </div>
+
+        <hr />
+        <button id="set-install" class="btn btn-primary btn-block hidden">Install app</button>
+        <p id="set-install-hint" class="muted small hidden">
+          On iPhone/iPad: tap the Share button, then “Add to Home Screen”.
+        </p>
+        <button id="set-reset" class="btn btn-danger btn-block">Reset scores</button>
+      </div>
+    </div>
+
+    <script type="module" src="js/main.js"></script>
+  </body>
+</html>

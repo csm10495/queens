@@ -1,0 +1,32 @@
+# The app ships with no runtime dependencies; node_modules only ever holds
+# optional dev tooling (e.g. a test browser).
+node_modules/
+npm-debug.log*
+yarn-error.log*
+pnpm-debug.log*
+.npm/
+
+# Test / coverage output
+coverage/
+*.lcov
+.nyc_output/
+
+# Scratch screenshots or other generated output from tools/
+# (real app icons live in icons/ and are committed)
+tools/*.png
+
+# Environment / secrets
+.env
+.env.*
+
+# OS cruft
+.DS_Store
+Thumbs.db
+Desktop.ini
+ehthumbs.db
+
+# Editor / IDE
+.vscode/
+.idea/
+*.swp
+*~

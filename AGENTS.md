@@ -59,7 +59,9 @@ as an **offline PWA**. It runs on desktop and phone.
   working after a reload/resume).
 - **stats**: `{ easy|medium|hard|veryhard: {bestMs, wins}, custom: { [nAsString]: {bestMs, wins} } }`.
 - **settings**: `{ theme, palette, queenIcon, autoX, highlightConflicts, showTimer, dragMark, continuousHints, defaultMode, customN }`
-  (`queenIcon` is any emoji — sanitized to one grapheme; `dragMark` enables press-and-drag ✗
+  (`queenIcon` is any emoji — sanitized to one grapheme, committed live as you type without
+  rewriting the field mid-edit so Android IME / backspace-to-clear keep working;
+  `dragMark` enables press-and-drag ✗
   painting; `continuousHints` flags a misplaced queen with a corner ✗, only on `unique` boards).
 
 ### Pure, DOM-free modules (unit-tested directly)

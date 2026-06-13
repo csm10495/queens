@@ -6,6 +6,7 @@ import {
   normalizeSettings,
   resolveTheme,
   sanitizeQueenIcon,
+  liveQueenIcon,
 } from '../js/settings.js';
 
 test('normalizeSettings returns defaults for empty/garbage input', () => {
@@ -96,6 +97,21 @@ test('sanitizeQueenIcon preserves ZWJ emoji when grapheme segmenter is available
 
   assert.equal(sanitizeQueenIcon('👩‍🚀abc'), '👩‍🚀');
   assert.equal(normalizeSettings({ queenIcon: '👩‍🚀abc' }).queenIcon, '👩‍🚀');
+});
+
+test('liveQueenIcon returns null for empty/whitespace so the field can be cleared mid-edit', () => {
+  assert.equal(liveQueenIcon(''), null);
+  assert.equal(liveQueenIcon('   '), null);
+  assert.equal(liveQueenIcon(null), null);
+  assert.equal(liveQueenIcon(undefined), null);
+});
+
+test('liveQueenIcon commits the sanitized first grapheme for non-empty input', () => {
+  assert.equal(liveQueenIcon('🍕'), '🍕');
+  assert.equal(liveQueenIcon('🍕abc'), '🍕');
+  if (typeof Intl.Segmenter === 'function') {
+    assert.equal(liveQueenIcon('👩‍🚀'), '👩‍🚀');
+  }
 });
 
 test('resolveTheme maps system to light/dark and passes explicit through', () => {

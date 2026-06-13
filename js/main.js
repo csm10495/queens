@@ -13,7 +13,7 @@ import {
 } from './modes.js';
 import * as store from './storage.js';
 import { recordWin, getBucket, emptyStats } from './stats.js';
-import { normalizeSettings, applyTheme, QUEEN_PRESETS } from './settings.js';
+import { normalizeSettings, applyTheme, liveQueenIcon, QUEEN_PRESETS } from './settings.js';
 import { generatePuzzleForMode, UNIQUE_MAX_N } from './puzzle.js';
 import { encodePuzzleCode, parsePuzzleCode } from './code.js';
 import { EMPTY, MARK } from './rules.js';
@@ -400,7 +400,9 @@ function onSettingsChange() {
     showTimer: el.setTimer.checked,
     dragMark: el.setDrag.checked,
     continuousHints: el.setHints.checked,
-    queenIcon: el.setQueen.value,
+    // Keep the committed queen icon; the queen field has its own live handler so
+    // toggling another setting never disturbs an in-progress emoji edit.
+    queenIcon: settings.queenIcon,
     customN,
   });
   applyTheme(settings.theme);
@@ -409,15 +411,36 @@ function onSettingsChange() {
   if (game) {
     colors = regionColors(game.n, settings.palette);
     renderBoard();
-    if (revealed) {
-      ui.revealSolution(el.board, game, colors, settings.queenIcon);
-    } else {
-      ui.updateBoard(el.board, game, boardRenderOpts());
-    }
+    repaintBoard();
   }
   applyDragMark();
-  el.setQueen.value = settings.queenIcon;
   saveSettings();
+}
+
+function repaintBoard() {
+  if (!game) return;
+  if (revealed) ui.revealSolution(el.board, game, colors, settings.queenIcon);
+  else ui.updateBoard(el.board, game, boardRenderOpts());
+}
+
+// Queen-icon field: commit live as the user types, but never rewrite the field
+// mid-edit (so Android IME composition and backspace-to-clear keep working). The
+// field is normalized to the single committed glyph only when editing finishes.
+let composingQueen = false;
+
+function applyQueenInput() {
+  if (composingQueen) return;
+  const icon = liveQueenIcon(el.setQueen.value);
+  if (icon === null || icon === settings.queenIcon) return; // empty field → leave as-is
+  settings = normalizeSettings({ ...settings, queenIcon: icon });
+  repaintBoard();
+  saveSettings();
+}
+
+function finalizeQueenInput() {
+  // On blur/change, snap the display to the committed glyph (an empty field
+  // reverts to the last good icon rather than vanishing).
+  el.setQueen.value = settings.queenIcon;
 }
 
 function applyShowTimer() {
@@ -480,7 +503,8 @@ function populateQueenPresets() {
     b.title = `Use ${emoji}`;
     b.addEventListener('click', () => {
       el.setQueen.value = emoji;
-      onSettingsChange();
+      applyQueenInput();
+      finalizeQueenInput();
     });
     el.queenPresets.appendChild(b);
   }
@@ -505,7 +529,16 @@ function wireEvents() {
   el.setReset.addEventListener('click', resetScores);
   el.shareBtn.addEventListener('click', sharePuzzle);
   el.puzzleCode.addEventListener('click', sharePuzzle);
-  el.setQueen.addEventListener('input', onSettingsChange);
+  el.setQueen.addEventListener('input', applyQueenInput);
+  el.setQueen.addEventListener('compositionstart', () => {
+    composingQueen = true;
+  });
+  el.setQueen.addEventListener('compositionend', () => {
+    composingQueen = false;
+    applyQueenInput();
+  });
+  el.setQueen.addEventListener('change', finalizeQueenInput);
+  el.setQueen.addEventListener('blur', finalizeQueenInput);
   el.loadCodeBtn.addEventListener('click', loadCodeFromInput);
   el.loadCode.addEventListener('keydown', (e) => {
     if (e.key === 'Enter') loadCodeFromInput();
